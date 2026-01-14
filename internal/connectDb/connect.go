@@ -1,3 +1,0 @@
-package connectDb
-
-type struct

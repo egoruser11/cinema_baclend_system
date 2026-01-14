@@ -1,8 +1,37 @@
 package main
 
-//TIP <p>To run your code, right-click the code and select <b>Run</b>.</p> <p>Alternatively, click
-// the <icon src="AllIcons.Actions.Execute"/> icon in the gutter and select the <b>Run</b> menu item from here.</p>
+import (
+	"github.com/labstack/echo/v4"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	"log/slog"
+	"net/http"
+	"os"
+)
+
+const dbConfig = "host=localhost user=user password=password dbname=mydb port=5432 sslmode=disable"
 
 func main() {
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	slog.SetDefault(logger)
 
+	dsn := dbConfig
+	_, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	if err != nil {
+		logger.Error("Ошибка подключения к БД", "error", err)
+		os.Exit(1)
+	}
+	logger.Info("Подключение к БД успешно")
+
+	e := echo.New()
+	e.GET("/", func(c echo.Context) error {
+		logger.Info("Получен запрос на /")
+		return c.String(http.StatusOK, "Привет от Echo и GORM!")
+	})
+
+	port := "localhost:8080"
+	logger.Info("Запуск сервера", "port", port)
+	if err := e.Start(port); err != nil {
+		logger.Error("Ошибка сервера", "error", err)
+	}
 }
