@@ -14,7 +14,6 @@ const dbConfig = "host=localhost user=user password=password dbname=mydb port=54
 func main() {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
-
 	dsn := dbConfig
 	_, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {

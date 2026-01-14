@@ -25,9 +25,9 @@ type User struct {
 	Username     string     `gorm:"size:100;not null;unique" json:"username"`
 	Email        string     `gorm:"size:255;not null;unique" json:"email"`
 	PasswordHash string     `gorm:"size:255;not null" json:"-"` // не отдаем в JSON
-	Role         UserRole   `gorm:"type:varchar(20);not null;default:'user'" json:"role"`
 	Age          uint       `gorm:"check:age >= 10 AND age <= 99" json:"age"`
 	MoneyBalance float64    `gorm:"type:decimal(10,2);default:0.00" json:"balance"`
+	Role         UserRole   `gorm:"type:varchar(20);not null;default:'user'" json:"role"`
 	Status       UserStatus `gorm:"not null" json:"status"`
 	CoinBalance  uint64     `gorm:"default:0" json:"coin_balance"`
 	// Связи
