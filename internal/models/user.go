@@ -15,7 +15,7 @@ const (
 type UserStatus string
 
 const (
-	active   UserStatus = "active"
+	Active   UserStatus = "active"
 	blocked  UserStatus = "blocked"
 	inactive UserStatus = "inactive"
 )
