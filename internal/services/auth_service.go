@@ -3,8 +3,10 @@ package services
 import (
 	"cinema_backend_system/internal/models"
 	"cinema_backend_system/internal/utils"
+	"cinema_backend_system/internal/validators"
 	"errors"
 	"gorm.io/gorm"
+	"strings"
 	"time"
 )
 
@@ -12,6 +14,11 @@ const lengthToken = 32
 
 type AuthService struct {
 	db *gorm.DB
+}
+
+type RegisterResult struct {
+	User  *models.User
+	Token string
 }
 
 func NewAuthService(db *gorm.DB) *AuthService {
@@ -33,7 +40,11 @@ func (s *AuthService) Login(username, password string, deviceInfo string) (*mode
 		return nil, "", errors.New("User is not active , contact support")
 	}
 
-	tokenString := utils.GenerateToken(lengthToken)
+	tokenString, err := s.CreateToken(user.ID, deviceInfo)
+
+	if err != nil {
+		return nil, "", err
+	}
 
 	token := models.Token{
 		UserID:     user.ID,
@@ -72,4 +83,61 @@ func (s *AuthService) Logout(tokenString string, isFullLogout bool) error {
 	}
 
 	return nil
+}
+
+func (s *AuthService) Register(req validators.RegisterRequest) (*RegisterResult, error) {
+
+	if errorsMsg, ok := validators.ValidateRegister(s.db, req); !ok {
+		var errorMsgs []string
+		for field, msg := range errorsMsg {
+			errorMsgs = append(errorMsgs, field+": "+msg)
+		}
+		return nil, errors.New(strings.Join(errorMsgs, "\n"))
+	}
+
+	hashedPassword, err := utils.HashPassword(req.Password)
+	if err != nil {
+		return nil, errors.New("Failed to hash password")
+	}
+
+	user := &models.User{
+		Username:     req.Username,
+		Email:        req.Email,
+		PasswordHash: hashedPassword,
+		Age:          req.Age,
+		Role:         models.RoleUser,
+		Status:       models.Active,
+		MoneyBalance: 0.00,
+		CoinBalance:  0,
+	}
+	err = s.db.Create(user).Error
+
+	if err != nil {
+		return nil, errors.New("Failed to create user")
+	}
+
+	tokenString, err := s.CreateToken(user.ID, req.DeviceInfo)
+	if err != nil {
+		return &RegisterResult{User: user}, err
+	}
+	return &RegisterResult{
+		User:  user,
+		Token: tokenString,
+	}, nil
+}
+
+func (s *AuthService) CreateToken(UserId uint, deviceInfo string) (string, error) {
+	tokenString := utils.GenerateToken(lengthToken)
+	token := models.Token{
+		UserID:     UserId,
+		Token:      tokenString,
+		ExpiresAt:  time.Now().Add(24 * time.Hour),
+		CreatedAt:  time.Now(),
+		DeviceInfo: deviceInfo,
+	}
+	err := s.db.Create(&token).Error
+	if err != nil {
+		return "", errors.New("Failed to create token")
+	}
+	return tokenString, nil
 }

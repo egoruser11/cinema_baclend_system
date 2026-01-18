@@ -2,6 +2,7 @@ package main
 
 import (
 	"cinema_backend_system/internal/models"
+	"cinema_backend_system/internal/utils"
 	"github.com/labstack/echo/v4"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -10,12 +11,10 @@ import (
 	"os"
 )
 
-const dbConfig = "host=localhost user=user password=password dbname=mydb port=5432 sslmode=disable"
-
 func main() {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
-	dsn := dbConfig
+	dsn := utils.DbConfig
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		logger.Error("Ошибка подключения к БД", "error", err)

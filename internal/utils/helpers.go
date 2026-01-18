@@ -5,6 +5,8 @@ import (
 	"math/rand"
 )
 
+const DbConfig = "host=localhost user=user password=password dbname=mydb port=5432 sslmode=disable"
+
 func HashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	return string(bytes), err
