@@ -25,37 +25,31 @@ func NewAuthService(db *gorm.DB) *AuthService {
 	return &AuthService{db: db}
 }
 
-func (s *AuthService) Login(username, password string, deviceInfo string) (*models.User, string, error) {
+func (s *AuthService) Login(username, password, email string, deviceInfo string) (*models.User, string, error) {
 	var user models.User
 
-	if err := s.db.Where("username = ?", username).First(&user).Error; err != nil {
-		return nil, "", errors.New("Invalid username or password")
+	if username != "" {
+		if err := s.db.Where("username = ?", username).First(&user).Error; err != nil {
+			return nil, "", errors.New("Invalid credentials")
+		}
+	} else {
+		if err := s.db.Where("email = ?", email).First(&user).Error; err != nil {
+			return nil, "", errors.New("Invalid credentials")
+		}
 	}
 
 	if !utils.CheckPasswordHash(password, user.PasswordHash) {
-		return nil, "", errors.New("Invalid username or password")
+		return nil, "", errors.New("Invalid credentials")
 	}
 
 	if user.Status != models.Active {
-		return nil, "", errors.New("User is not active , contact support")
+		return nil, "", errors.New("User is not active")
 	}
 
 	tokenString, err := s.CreateToken(user.ID, deviceInfo)
 
 	if err != nil {
 		return nil, "", err
-	}
-
-	token := models.Token{
-		UserID:     user.ID,
-		Token:      tokenString,
-		ExpiresAt:  time.Now().Add(time.Hour * 24),
-		CreatedAt:  time.Now(),
-		DeviceInfo: deviceInfo,
-	}
-
-	if err := s.db.Create(&token).Error; err != nil {
-		return nil, "", errors.New("Failed to create token")
 	}
 
 	return &user, tokenString, nil
