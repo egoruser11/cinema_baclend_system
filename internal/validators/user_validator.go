@@ -15,15 +15,15 @@ type RegisterRequest struct {
 }
 
 func ValidateRegister(db *gorm.DB, req RegisterRequest) (map[string]string, bool) {
-
 	errors := make(map[string]string)
+
 	if req.Username == "" {
-		errors["Username"] = "Username is required"
+		errors["username"] = "Username is required"
 	} else if len(req.Username) < 3 {
 		errors["username"] = "Username must be at least 3 characters"
 	} else if len(req.Username) > 50 {
 		errors["username"] = "Username must be less than 50 characters"
-	} else if !regexp.MustCompile("^[a-zA-Z0-9]+$").MatchString(req.Username) {
+	} else if !regexp.MustCompile("^[a-zA-Z0-9._]+$").MatchString(req.Username) {
 		errors["username"] = "Username can only contain letters, numbers, dots and underscores"
 	}
 
@@ -31,6 +31,24 @@ func ValidateRegister(db *gorm.DB, req RegisterRequest) (map[string]string, bool
 		errors["email"] = "Email is required"
 	} else if !isValidEmail(req.Email) {
 		errors["email"] = "Invalid email"
+	}
+
+	if req.Password == "" {
+		errors["password"] = "Password is required"
+	} else if len(req.Password) < 6 {
+		errors["password"] = "Password must be at least 6 characters"
+	} else if len(req.Password) > 100 {
+		errors["password"] = "Password must be less than 100 characters"
+	}
+
+	if req.Age < 10 {
+		errors["age"] = "Age must be at least 10 years"
+	} else if req.Age > 99 {
+		errors["age"] = "Age must be less than 100 years"
+	}
+
+	if req.DeviceInfo == "" {
+		errors["device_info"] = "Device info is required"
 	}
 
 	if len(errors) == 0 {
@@ -48,7 +66,6 @@ func ValidateRegister(db *gorm.DB, req RegisterRequest) (map[string]string, bool
 	}
 
 	return errors, len(errors) == 0
-
 }
 
 func isValidEmail(email string) bool {

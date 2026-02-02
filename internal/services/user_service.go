@@ -16,9 +16,8 @@ func NewUserService(db *gorm.DB) *UserService {
 
 func (service *UserService) Profile(userId uint) (*models.User, error) {
 	var user models.User
-
-	err := service.db.Where("id = ?", userId).First(&user)
-	if err != nil {
+	result := service.db.Where("id = ?", userId).First(&user)
+	if result.Error != nil {
 		return nil, errors.New("User not found")
 	}
 	return &user, nil

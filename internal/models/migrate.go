@@ -26,7 +26,9 @@ func SetupDatabase(db *gorm.DB) error {
 	if err := SeedAdmin(db); err != nil {
 		return err
 	}
-
+	if err := SeedRegularUser(db); err != nil {
+		return err
+	}
 	if err := SeedGenres(db); err != nil {
 		return err
 	}

@@ -15,9 +15,9 @@ const (
 type UserStatus string
 
 const (
-	Active   UserStatus = "active"
-	blocked  UserStatus = "blocked"
-	inactive UserStatus = "inactive"
+	ActiveUserStatus   UserStatus = "active"
+	BlockedUserStatus  UserStatus = "blocked"
+	InactiveUserStatus UserStatus = "inactive"
 )
 
 type User struct {

@@ -1,19 +1,23 @@
 package main
 
 import (
+	"cinema_backend_system/internal/handlers"
 	"cinema_backend_system/internal/models"
+	routes "cinema_backend_system/internal/routes/user_routes"
+	"cinema_backend_system/internal/services"
 	"cinema_backend_system/internal/utils"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"log/slog"
-	"net/http"
 	"os"
 )
 
 func main() {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
+
 	dsn := utils.DbConfig
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
@@ -26,14 +30,27 @@ func main() {
 		os.Exit(1)
 	}
 	logger.Info("База данных настроена")
-	logger.Info("Сидеры и миграции запустились")
+
+	authService := services.NewAuthService(db)
+	userService := services.NewUserService(db)
+
+	authHandler := handlers.NewAuthHandler(authService)
+	userHandler := handlers.NewUserHandler(userService)
 
 	e := echo.New()
-	e.GET("/", func(c echo.Context) error {
-		logger.Info("Получен запрос на /")
-		return c.String(http.StatusOK, "Привет от Echo и GORM!")
-	})
 
+	e.Use(middleware.Logger())
+	e.Use(middleware.Recover())
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins:     []string{"http://localhost:3000", "http://localhost:8080"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Authorization", "Content-Type", "X-User-ID", "X-Device-Info"},
+		AllowCredentials: true,
+		MaxAge:           86400,
+	}))
+
+	routes.SetupRoutes(e, authHandler, userHandler, db)
+	
 	port := "localhost:8080"
 	logger.Info("Запуск сервера", "port", port)
 	if err := e.Start(port); err != nil {

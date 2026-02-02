@@ -25,9 +25,8 @@ func NewAuthService(db *gorm.DB) *AuthService {
 	return &AuthService{db: db}
 }
 
-func (s *AuthService) Login(username, password, email string, deviceInfo string) (*models.User, string, error) {
+func (s *AuthService) Login(username, password, email, deviceInfo string) (*models.User, string, error) {
 	var user models.User
-
 	if username != "" {
 		if err := s.db.Where("username = ?", username).First(&user).Error; err != nil {
 			return nil, "", errors.New("Invalid credentials")
@@ -42,7 +41,7 @@ func (s *AuthService) Login(username, password, email string, deviceInfo string)
 		return nil, "", errors.New("Invalid credentials")
 	}
 
-	if user.Status != models.Active {
+	if user.Status != models.ActiveUserStatus {
 		return nil, "", errors.New("User is not active")
 	}
 
@@ -100,7 +99,7 @@ func (s *AuthService) Register(req validators.RegisterRequest) (*RegisterResult,
 		PasswordHash: hashedPassword,
 		Age:          req.Age,
 		Role:         models.RoleUser,
-		Status:       models.Active,
+		Status:       models.ActiveUserStatus,
 		MoneyBalance: 0.00,
 		CoinBalance:  0,
 	}
