@@ -18,54 +18,40 @@ func AuthMiddleware(db *gorm.DB) echo.MiddlewareFunc {
 			if authHeader == "" {
 				return utils.Unauthorized(c, "Missing Authorization header")
 			}
-
 			parts := strings.SplitN(authHeader, " ", 2)
-			if len(parts) != 2 || parts[0] != "Bearer" {
-				return utils.Unauthorized(c, "Invalid Authorization header")
+			if len(parts) != 2 && parts[0] != "Bearer" {
+				return utils.Unauthorized(c, "Uncorrect auth token header")
 			}
+
 			tokenString := parts[1]
 
-			userIDStr := c.Request().Header.Get("X-User-ID")
-			if userIDStr == "" {
-				return utils.Unauthorized(c, "Missing X-User-ID header")
+			if tokenString == "" {
+				return utils.Unauthorized(c, "empty token")
 			}
-
-			userID, err := strconv.ParseUint(userIDStr, 10, 32)
-			if err != nil {
-				return utils.BadRequest(c, "Invalid user_id format")
-			}
-
-			deviceInfo := c.Request().Header.Get("X-Device-Info")
-			if deviceInfo == "" {
-				return utils.Unauthorized(c, "Missing X-Device-Info header")
-			}
-
 			var token models.Token
-			err = db.
-				Preload("User").
-				Where("token = ? AND user_id = ? AND device_info = ?",
-					tokenString, uint(userID), deviceInfo).
-				First(&token).Error
+			err := db.Preload("User").Where("token = ?", tokenString).First(&token).Error
 
 			if err != nil {
-				return utils.Unauthorized(c, "Invalid authentication data")
+				return utils.Unauthorized(c, "invalid token")
 			}
 
 			if token.ExpiresAt.Before(time.Now()) {
-				db.Delete(&token)
-				return utils.Unauthorized(c, "Token is expired")
+				return utils.Unauthorized(c, "token is expired")
 			}
-
 			if token.User.Status != models.ActiveUserStatus {
-				return utils.Unauthorized(c, "User is not active")
+				return utils.Unauthorized(c, "user is not active")
 			}
-
-			c.Set("user_id", token.UserID)
-			c.Set("user_role", token.User.Role)
-			c.Set("token", tokenString)
-			c.Set("device_info", token.DeviceInfo)
-			c.Set("user", &token.User)
-
+			userIdStr := c.QueryParam("user_id")
+			deviceInfo := c.QueryParam("device_info")
+			if userIdStr == "" || deviceInfo == "" {
+				return utils.Unauthorized(c, "invalid query params")
+			}
+			intUserId, _ := strconv.ParseUint(userIdStr, 10, 0)
+			resUserId := uint(intUserId)
+			if token.DeviceInfo != deviceInfo || token.User.ID != resUserId {
+				return utils.Unauthorized(c, "!!!invalid query params!!!")
+			}
+			c.Set("user_data", &token.User)
 			return next(c)
 		}
 	}

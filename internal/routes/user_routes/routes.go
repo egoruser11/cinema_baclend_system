@@ -14,7 +14,7 @@ func SetupRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, userHandler *h
 	protected := e.Group("/api/v1/")
 	protected.Use(middleware.AuthMiddleware(db))
 	{
-		protected.POST("api/v1/profile", userHandler.Profile)
+		protected.GET("profile", userHandler.Profile)
 	}
 
 }
