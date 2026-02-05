@@ -19,7 +19,8 @@ func AuthMiddleware(db *gorm.DB) echo.MiddlewareFunc {
 				return utils.Unauthorized(c, "Missing Authorization header")
 			}
 			parts := strings.SplitN(authHeader, " ", 2)
-			if len(parts) != 2 && parts[0] != "Bearer" {
+
+			if len(parts) != 2 || parts[0] != "Bearer" {
 				return utils.Unauthorized(c, "Uncorrect auth token header")
 			}
 

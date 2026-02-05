@@ -2,6 +2,7 @@ package services
 
 import (
 	"cinema_backend_system/internal/models"
+	"cinema_backend_system/internal/requests"
 	"cinema_backend_system/internal/utils"
 	"cinema_backend_system/internal/validators"
 	"errors"
@@ -78,7 +79,7 @@ func (s *AuthService) Logout(tokenString string, isFullLogout bool) error {
 	return nil
 }
 
-func (s *AuthService) Register(req validators.RegisterRequest) (*RegisterResult, error) {
+func (s *AuthService) Register(req requests.RegisterRequest) (*RegisterResult, error) {
 
 	if errorsMsg, ok := validators.ValidateRegister(s.db, req); !ok {
 		var errorMsgs []string

@@ -3,7 +3,7 @@ package main
 import (
 	"cinema_backend_system/internal/handlers"
 	"cinema_backend_system/internal/models"
-	routes "cinema_backend_system/internal/routes/user_routes"
+	routes "cinema_backend_system/internal/routes"
 	"cinema_backend_system/internal/services"
 	"cinema_backend_system/internal/utils"
 	"github.com/labstack/echo/v4"
@@ -49,8 +49,10 @@ func main() {
 		MaxAge:           86400,
 	}))
 
-	routes.SetupRoutes(e, authHandler, userHandler, db)
-	
+	routes.SetupAuthRoutes(e, authHandler)
+	routes.SetupUserRoutes(e, userHandler, db)
+	routes.SetupAdminRoutes(e, userHandler, db)
+
 	port := "localhost:8080"
 	logger.Info("Запуск сервера", "port", port)
 	if err := e.Start(port); err != nil {

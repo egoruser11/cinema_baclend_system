@@ -1,20 +1,13 @@
 package validators
 
 import (
+	"cinema_backend_system/internal/requests"
 	"gorm.io/gorm"
 	"regexp"
 	"strings"
 )
 
-type RegisterRequest struct {
-	Username   string `json:"username"`
-	Email      string `json:"email"`
-	Password   string `json:"password"`
-	Age        uint   `json:"age"`
-	DeviceInfo string `json:"device_info"`
-}
-
-func ValidateRegister(db *gorm.DB, req RegisterRequest) (map[string]string, bool) {
+func ValidateRegister(db *gorm.DB, req requests.RegisterRequest) (map[string]string, bool) {
 	errors := make(map[string]string)
 
 	if req.Username == "" {

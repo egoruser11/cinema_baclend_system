@@ -1,9 +1,9 @@
 package handlers
 
 import (
+	"cinema_backend_system/internal/requests"
 	"cinema_backend_system/internal/services"
 	"cinema_backend_system/internal/utils"
-	"cinema_backend_system/internal/validators"
 	"github.com/labstack/echo/v4"
 	"strings"
 )
@@ -16,15 +16,8 @@ func NewAuthHandler(authService *services.AuthService) *AuthHandler {
 	return &AuthHandler{authService: authService}
 }
 
-type LoginRequest struct {
-	Username   string `json:"username"`
-	Email      string `json:"email"`
-	Password   string `json:"password"`
-	DeviceInfo string `json:"device_info"`
-}
-
 func (h *AuthHandler) Login(c echo.Context) error {
-	var req LoginRequest
+	var req requests.LoginRequest
 	if err := c.Bind(&req); err != nil {
 		return utils.BadRequest(c, "invalid request body")
 	}
@@ -60,7 +53,7 @@ func (h *AuthHandler) Login(c echo.Context) error {
 }
 
 func (h *AuthHandler) Register(c echo.Context) error {
-	var req validators.RegisterRequest
+	var req requests.RegisterRequest
 	if err := c.Bind(&req); err != nil {
 		return utils.BadRequest(c, "invalid request body")
 	}
