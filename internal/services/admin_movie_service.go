@@ -17,7 +17,7 @@ func NewAdminMovieService(db *gorm.DB) *AdminMovieService {
 	return &AdminMovieService{db: db}
 }
 
-func (service *AdminMovieService) CreateMovie(req requests.MovieCreateRequest) (*models.Movie, error) {
+func (service *AdminMovieService) Create(req requests.MovieCreateRequest) (*models.Movie, error) {
 
 	errorsValid, ok := validators.ValidateMovie(service.db, req)
 	if !ok {

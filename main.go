@@ -33,9 +33,11 @@ func main() {
 
 	authService := services.NewAuthService(db)
 	userService := services.NewUserService(db)
+	adminMovieService := services.NewAdminMovieService(db)
 
 	authHandler := handlers.NewAuthHandler(authService)
 	userHandler := handlers.NewUserHandler(userService)
+	adminMovieHandler := handlers.NewAdminMovieHandler(adminMovieService)
 
 	e := echo.New()
 
@@ -51,7 +53,7 @@ func main() {
 
 	routes.SetupAuthRoutes(e, authHandler)
 	routes.SetupUserRoutes(e, userHandler, db)
-	routes.SetupAdminRoutes(e, userHandler, db)
+	routes.SetupAdminRoutes(e, adminMovieHandler, db)
 
 	port := "localhost:8080"
 	logger.Info("Запуск сервера", "port", port)

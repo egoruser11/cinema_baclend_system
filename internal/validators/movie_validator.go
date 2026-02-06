@@ -15,18 +15,17 @@ func ValidateMovie(db *gorm.DB, req requests.MovieCreateRequest) (map[string]str
 		errors["genres_ids"] = "Movie must have at least one id"
 	} else {
 		var countValidIds int64
-		uniqueIDs := make(map[int]bool)
+		db.Model(&models.Genre{}).Where("id IN ?", req.GenreIDS).Count(&countValidIds)
+		uniqueSet := make(map[int]bool)
 		for _, id := range req.GenreIDS {
 			if id <= 0 {
 				errors["genre_ids"] = "Genre ID must be positive"
 				break
 			}
-			uniqueIDs[id] = true
+			uniqueSet[id] = true
 		}
-		db.Model(&models.Genre{}).Where("id IN ?", uniqueIDs).Count(&countValidIds)
-
-		if countValidIds != int64(len(uniqueIDs)) {
-			errors["genres_ids"] = "Something genre IDs not find in db , please input correct data"
+		if countValidIds != int64(len(uniqueSet)) {
+			errors["genres_ids"] = "Some genre IDs not found in database"
 		}
 
 	}

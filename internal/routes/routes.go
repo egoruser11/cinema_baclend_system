@@ -20,11 +20,11 @@ func SetupAuthRoutes(e *echo.Echo, authHandler *handlers.AuthHandler) {
 	e.POST("api/v1/auth/register", authHandler.Register)
 }
 
-//добавить adminMiddleware
-func SetupAdminRoutes(e *echo.Echo, userHandler *handlers.UserHandler, db *gorm.DB) {
+// добавить adminMiddleware
+func SetupAdminRoutes(e *echo.Echo, adminMovieHandler *handlers.AdminMovieHandler, db *gorm.DB) {
 	protected := e.Group("/api/v1/")
-	protected.Use(middleware.AuthMiddleware(db))
+	protected.Use(middleware.AuthMiddleware(db), middleware.AdminMiddleware())
 	{
-		protected.GET("movie/create", userHandler.Profile)
+		protected.POST("movie/create", adminMovieHandler.Create)
 	}
 }
