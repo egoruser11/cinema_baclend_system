@@ -5,6 +5,7 @@ import (
 	"cinema_backend_system/internal/requests"
 	"cinema_backend_system/internal/validators"
 	"errors"
+	"fmt"
 	"gorm.io/gorm"
 	"strings"
 )
@@ -19,7 +20,7 @@ func NewAdminMovieService(db *gorm.DB) *AdminMovieService {
 
 func (service *AdminMovieService) Create(req requests.MovieCreateRequest) (*models.Movie, error) {
 
-	errorsValid, ok := validators.ValidateMovie(service.db, req)
+	errorsValid, ok := validators.ValidateCreateMovie(service.db, req)
 	if !ok {
 		var errorMsgs []string
 		for field, err := range errorsValid {
@@ -48,4 +49,36 @@ func (service *AdminMovieService) Create(req requests.MovieCreateRequest) (*mode
 	}
 
 	return movie, nil
+}
+
+func (service *AdminMovieService) Update(req requests.MovieUpdateRequest) (*models.Movie, error) {
+	errorsValid, updateData, genreIds, ok := validators.ValidateUpdateMovie(service.db, req)
+	if !ok {
+		var errorMsgs []string
+		for field, err := range errorsValid {
+			errorMsgs = append(errorMsgs, field+": "+err)
+		}
+		return nil, errors.New(strings.Join(errorMsgs, "\n"))
+	}
+	var movie models.Movie
+	err1 := service.db.Preload("Genres").Where("id = ?", req.Id).First(&movie)
+
+	if err1.Error != nil {
+		return nil, errors.New("Failed to find movie , unncorrect id")
+	}
+
+	if len(updateData) > 0 {
+		service.db.Model(&movie).Updates(updateData)
+	}
+
+	if len(genreIds) > 0 {
+		var newGenres []models.Genre
+		service.db.Where("id IN ?", genreIds).Find(&newGenres)
+		fmt.Println(genreIds)
+		if err := service.db.Model(&movie).Association("Genres").Replace(newGenres); err != nil {
+			return nil, errors.New("Failed to update genres: ")
+		}
+	}
+
+	return &movie, nil
 }

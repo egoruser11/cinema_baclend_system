@@ -26,5 +26,6 @@ func SetupAdminRoutes(e *echo.Echo, adminMovieHandler *handlers.AdminMovieHandle
 	protected.Use(middleware.AuthMiddleware(db), middleware.AdminMiddleware())
 	{
 		protected.POST("movie/create", adminMovieHandler.Create)
+		protected.PATCH("movie/update", adminMovieHandler.Update)
 	}
 }

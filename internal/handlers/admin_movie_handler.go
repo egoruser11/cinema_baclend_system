@@ -26,3 +26,15 @@ func (handler *AdminMovieHandler) Create(c echo.Context) error {
 	}
 	return utils.OK(c, *movie)
 }
+
+func (handler *AdminMovieHandler) Update(c echo.Context) error {
+	var req requests.MovieUpdateRequest
+	if err := c.Bind(&req); err != nil {
+		return utils.BadRequest(c, "Invalid request body")
+	}
+	movie, err := handler.adminMovieService.Update(req)
+	if err != nil {
+		return utils.InternalServerError(c, err.Error())
+	}
+	return utils.OK(c, *movie)
+}

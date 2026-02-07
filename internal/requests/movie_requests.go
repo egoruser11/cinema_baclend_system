@@ -15,3 +15,15 @@ type MovieCreateRequest struct {
 	ReleaseDate time.Time        `json:"release_date"`
 	GenreIDS    []int            `json:"genre_ids"`
 }
+
+type MovieUpdateRequest struct {
+	Id          int               `json:"id"`
+	Title       *string           `json:"title,omitempty"`
+	Description *string           `json:"description,omitempty"`
+	Duration    *int              `json:"duration,omitempty"`
+	AgeRating   *models.AgeRating `json:"age_rating,omitempty"`
+	PosterURL   *string           `json:"poster_url,omitempty"`
+	TrailerURL  *string           `json:"trailer_url,omitempty"`
+	ReleaseDate *time.Time        `json:"release_date,omitempty"`
+	GenreIDS    []int             `json:"genre_ids,omitempty"`
+}
