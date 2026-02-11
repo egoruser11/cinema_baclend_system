@@ -20,12 +20,13 @@ func SetupAuthRoutes(e *echo.Echo, authHandler *handlers.AuthHandler) {
 	e.POST("api/v1/auth/register", authHandler.Register)
 }
 
-// добавить adminMiddleware
 func SetupAdminRoutes(e *echo.Echo, adminMovieHandler *handlers.AdminMovieHandler, db *gorm.DB) {
-	protected := e.Group("/api/v1/")
-	protected.Use(middleware.AuthMiddleware(db), middleware.AdminMiddleware())
+	movieGroup := e.Group("/api/v1/movie")
+	movieGroup.Use(middleware.AuthMiddleware(db), middleware.AdminMiddleware())
 	{
-		protected.POST("movie/create", adminMovieHandler.Create)
-		protected.PATCH("movie/update", adminMovieHandler.Update)
+		movieGroup.POST("create", adminMovieHandler.Create)
+		movieGroup.PATCH("update", adminMovieHandler.Update)
+		movieGroup.DELETE("delete", adminMovieHandler.Delete)
+		movieGroup.GET("", adminMovieHandler.Index)
 	}
 }

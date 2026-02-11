@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"gorm.io/gorm"
+	"strconv"
 	"strings"
 )
 
@@ -61,7 +62,7 @@ func (service *AdminMovieService) Update(req requests.MovieUpdateRequest) (*mode
 		return nil, errors.New(strings.Join(errorMsgs, "\n"))
 	}
 	var movie models.Movie
-	err1 := service.db.Preload("Genres").Where("id = ?", req.Id).First(&movie)
+	err1 := service.db.Preload("Genres", "Reviews").Where("id = ?", req.Id).First(&movie)
 
 	if err1.Error != nil {
 		return nil, errors.New("Failed to find movie , unncorrect id")
@@ -81,4 +82,53 @@ func (service *AdminMovieService) Update(req requests.MovieUpdateRequest) (*mode
 	}
 
 	return &movie, nil
+}
+
+func (service *AdminMovieService) Delete(id uint) error {
+	err := service.db.Delete(&models.Movie{}, id)
+	if err.Error != nil {
+		return errors.New("Failed to delete movie")
+	}
+	return nil
+}
+
+func (service *AdminMovieService) Show(id uint) (*models.Movie, error) {
+	var movie models.Movie
+	err := service.db.Preload("Genres", "Reviews", "Premieres").Where("id = ?", id).First(&movie).Error
+	if err != nil {
+		return nil, errors.New("Failed to find movie , try again")
+	}
+	return &movie, nil
+}
+
+//index
+
+func (service *AdminMovieService) Index(req requests.MovieIndexRequest) ([]*models.Movie, error) {
+	errorsVaild, filters := validators.ValidateIndexMovie(req)
+	if len(errorsVaild) > 0 {
+		returnedErrors := []string{}
+		for field, err := range errorsVaild {
+			returnedErrors = append(returnedErrors, field+": "+err)
+		}
+		return nil, errors.New(strings.Join(returnedErrors, "\n"))
+	}
+	fmt.Println(filters)
+	var movies []*models.Movie
+	query := service.db.Model(&models.Movie{}).Preload("Genres", "Reviews")
+	if len(filters) > 0 {
+		sort, existsSort := filters["sort"]
+		if existsSort {
+			orderType := filters["order_type"]
+			query.Order(sort + " " + orderType)
+		}
+		search, existsSearch := filters["search"]
+		if existsSearch {
+			resSearch := "%" + strings.ToLower(search) + "%"
+			query.Where("LOWER(title) LIKE ? OR LOWER(description) LIKE ?", resSearch, resSearch)
+		}
+	}
+	limit, _ := strconv.Atoi(filters["limit"])
+	offset, _ := strconv.Atoi(filters["offset"])
+	query.Limit(limit).Offset(offset).Find(&movies)
+	return movies, nil
 }

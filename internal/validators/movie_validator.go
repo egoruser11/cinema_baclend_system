@@ -3,6 +3,7 @@ package validators
 import (
 	"cinema_backend_system/internal/models"
 	"cinema_backend_system/internal/requests"
+	"fmt"
 	"gorm.io/gorm"
 	"net/url"
 	"time"
@@ -167,4 +168,44 @@ func ValidateUpdateMovie(db *gorm.DB, req requests.MovieUpdateRequest) (map[stri
 	}
 
 	return errors, updates, idGenres, len(errors) == 0
+}
+
+func ValidateIndexMovie(req requests.MovieIndexRequest) (map[string]string, map[string]string) {
+	filters := make(map[string]string)
+	errors := make(map[string]string)
+	if req.Search != nil {
+		if *req.Search != "" {
+			filters["search"] = *req.Search
+		}
+	}
+	if req.Sort == nil && req.IsDesc != nil || req.Sort != nil && req.IsDesc == nil {
+		errors["sort"] = "input second field , please"
+	}
+	if req.Sort != nil {
+		if *req.Sort == "" && req.IsDesc == nil {
+			errors["sort"] = "input second field , please"
+		}
+		filters["sort"] = *req.Sort
+		filters["order_type"] = GetOrderType(*req.IsDesc)
+	}
+	if req.Offset != nil {
+		filters["offset"] = fmt.Sprintf("%d", *req.Offset)
+	} else {
+		filters["offset"] = "0"
+	}
+	if req.Limit != nil {
+		filters["limit"] = fmt.Sprintf("%d", *req.Limit)
+	} else {
+		filters["limit"] = "10"
+	}
+
+	return errors, filters
+}
+
+func GetOrderType(isDesc bool) string {
+	if isDesc {
+		return "DESC"
+	} else {
+		return "ASC"
+	}
 }

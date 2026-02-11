@@ -27,3 +27,15 @@ type MovieUpdateRequest struct {
 	ReleaseDate *time.Time        `json:"release_date,omitempty"`
 	GenreIDS    []int             `json:"genre_ids,omitempty"`
 }
+
+type MovieIdRequest struct {
+	Id uint `query:"id"`
+}
+
+type MovieIndexRequest struct {
+	Sort   *string `query:"sort"` //rating , release date , duration , age_rating
+	IsDesc *bool   `query:"is_desc"`
+	Search *string `query:"search"` //title , description
+	Offset *uint   `query:"offset"`
+	Limit  *uint   `query:"limit"`
+}
