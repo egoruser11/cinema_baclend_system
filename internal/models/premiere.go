@@ -16,7 +16,7 @@ type Seat struct {
 type Premiere struct {
 	ID      uint    `gorm:"primaryKey" json:"id"`
 	MovieID uint    `gorm:"not null;index" json:"movie_id"`
-	Movie   Movie   `gorm:"foreignKey:MovieID" json:"-"`
+	Movie   Movie   `gorm:"foreignKey:MovieID" json:""`
 	Hall    string  `gorm:"size:100;not null" json:"hall"` // "Зал 1", "IMAX"
 	Price   float64 `gorm:"type:decimal(10,2);not null" json:"price"`
 

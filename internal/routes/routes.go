@@ -37,9 +37,9 @@ func SetupAdminPremiereRoutes(e *echo.Echo, adminPremiereHandler *handlers.Admin
 	premiereGroup.Use(middleware.AuthMiddleware(db), middleware.AdminMiddleware())
 	{
 		premiereGroup.POST("create", adminPremiereHandler.Create)
-		//movieGroup.PATCH("update", adminPremiereHandler.Update)
-		//movieGroup.DELETE("delete", adminPremiereHandler.Delete)
-		//movieGroup.GET("", adminPremiereHandler.Index)
-		//movieGroup.GET("show", adminPremiereHandler.Show)
+		premiereGroup.PATCH("update", adminPremiereHandler.Update)
+		//premiereGroup.DELETE("delete", adminPremiereHandler.Delete)
+		//premiereGroup.GET("", adminPremiereHandler.Index)
+		//premiereGroup.GET("show", adminPremiereHandler.Show)
 	}
 }

@@ -27,3 +27,15 @@ func (handler *AdminPremiereHandler) Create(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, premiere)
 }
+
+func (handler *AdminPremiereHandler) Update(c echo.Context) error {
+	var req requests.PremiereUpdateRequest
+	if err := c.Bind(&req); err != nil {
+		return utils.BadRequest(c, "Invalid request body")
+	}
+	premiere, err := handler.adminPremiereService.Update(req)
+	if err != nil {
+		return utils.InternalServerError(c, err.Error())
+	}
+	return c.JSON(http.StatusOK, premiere)
+}

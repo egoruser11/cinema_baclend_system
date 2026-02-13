@@ -13,3 +13,12 @@ type PremiereCreateRequest struct {
 	StartTime   time.Time `json:"start_time" binding:"required"`
 	EndTime     time.Time `json:"end_time" binding:"required,gtfield=StartTime"`
 }
+
+type PremiereUpdateRequest struct {
+	Id        uint       `json:"id" binding:"required"`
+	MovieID   *uint      `json:"movie_id" binding:""`
+	Hall      *string    `json:"hall" binding:""`
+	Price     *float64   `json:"price" binding:""`
+	StartTime *time.Time `json:"start_time" binding:""`
+	EndTime   *time.Time `json:"end_time" binding:""`
+}
