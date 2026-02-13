@@ -3,7 +3,7 @@ package main
 import (
 	"cinema_backend_system/internal/handlers"
 	"cinema_backend_system/internal/models"
-	routes "cinema_backend_system/internal/routes"
+	"cinema_backend_system/internal/routes"
 	"cinema_backend_system/internal/services"
 	"cinema_backend_system/internal/utils"
 	"github.com/labstack/echo/v4"
@@ -34,10 +34,12 @@ func main() {
 	authService := services.NewAuthService(db)
 	userService := services.NewUserService(db)
 	adminMovieService := services.NewAdminMovieService(db)
+	adminPremiereService := services.NewAdminPremiereService(db)
 
 	authHandler := handlers.NewAuthHandler(authService)
 	userHandler := handlers.NewUserHandler(userService)
 	adminMovieHandler := handlers.NewAdminMovieHandler(adminMovieService)
+	adminPremiereHandler := handlers.NewAdminPremiereHandler(adminPremiereService)
 
 	e := echo.New()
 
@@ -53,8 +55,8 @@ func main() {
 
 	routes.SetupAuthRoutes(e, authHandler)
 	routes.SetupUserRoutes(e, userHandler, db)
-	routes.SetupAdminRoutes(e, adminMovieHandler, db)
-
+	routes.SetupAdminMovieRoutes(e, adminMovieHandler, db)
+	routes.SetupAdminPremiereRoutes(e, adminPremiereHandler, db)
 	port := "localhost:8080"
 	logger.Info("Запуск сервера", "port", port)
 	if err := e.Start(port); err != nil {

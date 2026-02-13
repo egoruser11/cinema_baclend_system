@@ -20,13 +20,26 @@ func SetupAuthRoutes(e *echo.Echo, authHandler *handlers.AuthHandler) {
 	e.POST("api/v1/auth/register", authHandler.Register)
 }
 
-func SetupAdminRoutes(e *echo.Echo, adminMovieHandler *handlers.AdminMovieHandler, db *gorm.DB) {
-	movieGroup := e.Group("/api/v1/movie")
+func SetupAdminMovieRoutes(e *echo.Echo, adminMovieHandler *handlers.AdminMovieHandler, db *gorm.DB) {
+	movieGroup := e.Group("/api/v1/movie/")
 	movieGroup.Use(middleware.AuthMiddleware(db), middleware.AdminMiddleware())
 	{
 		movieGroup.POST("create", adminMovieHandler.Create)
 		movieGroup.PATCH("update", adminMovieHandler.Update)
 		movieGroup.DELETE("delete", adminMovieHandler.Delete)
 		movieGroup.GET("", adminMovieHandler.Index)
+		movieGroup.GET("show", adminMovieHandler.Show)
+	}
+}
+
+func SetupAdminPremiereRoutes(e *echo.Echo, adminPremiereHandler *handlers.AdminPremiereHandler, db *gorm.DB) {
+	premiereGroup := e.Group("/api/v1/premiere/")
+	premiereGroup.Use(middleware.AuthMiddleware(db), middleware.AdminMiddleware())
+	{
+		premiereGroup.POST("create", adminPremiereHandler.Create)
+		//movieGroup.PATCH("update", adminPremiereHandler.Update)
+		//movieGroup.DELETE("delete", adminPremiereHandler.Delete)
+		//movieGroup.GET("", adminPremiereHandler.Index)
+		//movieGroup.GET("show", adminPremiereHandler.Show)
 	}
 }

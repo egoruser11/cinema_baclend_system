@@ -62,8 +62,13 @@ func (service *AdminMovieService) Update(req requests.MovieUpdateRequest) (*mode
 		return nil, errors.New(strings.Join(errorMsgs, "\n"))
 	}
 	var movie models.Movie
-	err1 := service.db.Preload("Genres", "Reviews").Where("id = ?", req.Id).First(&movie)
-
+	err1 := service.db.
+		Preload("Genres").
+		Preload("Reviews").
+		Preload("Premieres").
+		Where("id = ?", req.Id).
+		First(&movie)
+	
 	if err1.Error != nil {
 		return nil, errors.New("Failed to find movie , unncorrect id")
 	}
@@ -94,7 +99,12 @@ func (service *AdminMovieService) Delete(id uint) error {
 
 func (service *AdminMovieService) Show(id uint) (*models.Movie, error) {
 	var movie models.Movie
-	err := service.db.Preload("Genres", "Reviews", "Premieres").Where("id = ?", id).First(&movie).Error
+	err := service.db.
+		Preload("Genres").
+		Preload("Reviews").
+		Preload("Premieres").
+		Where("id = ?", id).
+		First(&movie).Error
 	if err != nil {
 		return nil, errors.New("Failed to find movie , try again")
 	}
