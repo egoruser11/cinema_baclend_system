@@ -39,7 +39,7 @@ func SetupAdminPremiereRoutes(e *echo.Echo, adminPremiereHandler *handlers.Admin
 		premiereGroup.POST("create", adminPremiereHandler.Create)
 		premiereGroup.PATCH("update", adminPremiereHandler.Update)
 		//premiereGroup.DELETE("delete", adminPremiereHandler.Delete)
-		//premiereGroup.GET("", adminPremiereHandler.Index)
+		premiereGroup.GET("", adminPremiereHandler.Index)
 		//premiereGroup.GET("show", adminPremiereHandler.Show)
 	}
 }

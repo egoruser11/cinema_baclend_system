@@ -22,3 +22,23 @@ type PremiereUpdateRequest struct {
 	StartTime *time.Time `json:"start_time" binding:""`
 	EndTime   *time.Time `json:"end_time" binding:""`
 }
+
+type PremiereIndexRequest struct {
+	MovieID uint `query:"movie_id" binding:"required"`
+
+	Sort   *string `query:"sort"` //price , booked_count , total_seats , start_time
+	IsDesc *bool   `query:"is_desc"`
+
+	DayPremiere *string `query:"day_premiere"` // "1999-12-22"
+
+	HourFrom *string `query:"hour_from"` // "15-00"
+	HourTo   *string `query:"hour_to"`   // "15-00"
+
+	PriceMin *float64 `query:"price_min"`
+	PriceMax *float64 `query:"price_max"`
+
+	WeekDay *uint `query:"week_day"`
+
+	Offset *uint `query:"offset"`
+	Limit  *uint `query:"limit"`
+}

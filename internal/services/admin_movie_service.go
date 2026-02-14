@@ -3,6 +3,7 @@ package services
 import (
 	"cinema_backend_system/internal/models"
 	"cinema_backend_system/internal/requests"
+	"cinema_backend_system/internal/utils"
 	"cinema_backend_system/internal/validators"
 	"errors"
 	"fmt"
@@ -23,11 +24,7 @@ func (service *AdminMovieService) Create(req requests.MovieCreateRequest) (*mode
 
 	errorsValid, ok := validators.ValidateCreateMovie(service.db, req)
 	if !ok {
-		var errorMsgs []string
-		for field, err := range errorsValid {
-			errorMsgs = append(errorMsgs, field+": "+err)
-		}
-		return nil, errors.New(strings.Join(errorMsgs, "\n"))
+		return nil, errors.New(utils.InputErrorsValid(errorsValid))
 	}
 	var genres []models.Genre
 	service.db.Model(&models.Genre{}).Where("id IN ?", req.GenreIDS).Find(&genres)
@@ -55,11 +52,7 @@ func (service *AdminMovieService) Create(req requests.MovieCreateRequest) (*mode
 func (service *AdminMovieService) Update(req requests.MovieUpdateRequest) (*models.Movie, error) {
 	errorsValid, updateData, genreIds, ok := validators.ValidateUpdateMovie(service.db, req)
 	if !ok {
-		var errorMsgs []string
-		for field, err := range errorsValid {
-			errorMsgs = append(errorMsgs, field+": "+err)
-		}
-		return nil, errors.New(strings.Join(errorMsgs, "\n"))
+		return nil, errors.New(utils.InputErrorsValid(errorsValid))
 	}
 	var movie models.Movie
 	err1 := service.db.
@@ -68,7 +61,7 @@ func (service *AdminMovieService) Update(req requests.MovieUpdateRequest) (*mode
 		Preload("Premieres").
 		Where("id = ?", req.Id).
 		First(&movie)
-	
+
 	if err1.Error != nil {
 		return nil, errors.New("Failed to find movie , unncorrect id")
 	}
