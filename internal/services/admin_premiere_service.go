@@ -89,8 +89,9 @@ func (service *AdminPremiereService) Index(req requests.PremiereIndexRequest) ([
 		}
 
 		sort, existsSort := filter["sort"]
+
 		if existsSort {
-			query = query.Order(sort.(string) + filter["order_type"].(string))
+			query = query.Order(sort.(string) + " " + filter["order_type"].(string))
 		}
 
 		hourFromVal, exsistsHourFrom := filter["hour_from"]
@@ -110,14 +111,14 @@ func (service *AdminPremiereService) Index(req requests.PremiereIndexRequest) ([
 			query = query.Where("EXTRACT(DOW FROM start_time) = ?", weekDay)
 		}
 
-		maxPriceVal, exsistsMaxPrice := filter["max_price"]
+		maxPriceVal, exsistsMaxPrice := filter["price_max"]
 		if exsistsMaxPrice {
-			maxPrice := maxPriceVal.(int)
+			maxPrice := maxPriceVal.(float64)
 			query = query.Where("price <= ?", maxPrice)
 		}
-		minPriceVal, exsistsMinPrice := filter["min_price"]
+		minPriceVal, exsistsMinPrice := filter["price_min"]
 		if exsistsMinPrice {
-			minPrice := minPriceVal.(int)
+			minPrice := minPriceVal.(float64)
 			query = query.Where("price >= ?", minPrice)
 		}
 
@@ -134,4 +135,21 @@ func (service *AdminPremiereService) Index(req requests.PremiereIndexRequest) ([
 		return nil, errors.New("Failed to filter premieres")
 	}
 	return result, err
+}
+
+func (service *AdminPremiereService) Show(req requests.PremiereIdRequest) (*models.Premiere, error) {
+	var premiere models.Premiere
+	err := service.db.Model(&models.Premiere{}).Preload("Movie").Where("id = ?", req.Id).First(&premiere).Error
+	if err != nil {
+		return nil, errors.New("Can not find premiere")
+	}
+	return &premiere, nil
+}
+
+func (service *AdminPremiereService) Delete(req requests.PremiereIdRequest) error {
+	err := service.db.Where("id = ?", req.Id).Delete(&models.Premiere{}).Error
+	if err != nil {
+		return errors.New("Can not delete premiere")
+	}
+	return nil
 }

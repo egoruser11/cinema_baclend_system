@@ -16,7 +16,7 @@ func NewAuthHandler(authService *services.AuthService) *AuthHandler {
 	return &AuthHandler{authService: authService}
 }
 
-func (h *AuthHandler) Login(c echo.Context) error {
+func (handler *AuthHandler) Login(c echo.Context) error {
 	var req requests.LoginRequest
 	if err := c.Bind(&req); err != nil {
 		return utils.BadRequest(c, "invalid request body")
@@ -25,7 +25,7 @@ func (h *AuthHandler) Login(c echo.Context) error {
 		(req.Username != "" && req.Email != "")) {
 		return utils.BadRequest(c, "invalid credentials")
 	}
-	user, token, err := h.authService.Login(req.Username, req.Password, req.Email, req.DeviceInfo)
+	user, token, err := handler.authService.Login(req.Username, req.Password, req.Email, req.DeviceInfo)
 	if err != nil {
 		switch err.Error() {
 		case "Invalid credentials":
@@ -52,13 +52,13 @@ func (h *AuthHandler) Login(c echo.Context) error {
 	return utils.OK(c, response)
 }
 
-func (h *AuthHandler) Register(c echo.Context) error {
+func (handler *AuthHandler) Register(c echo.Context) error {
 	var req requests.RegisterRequest
 	if err := c.Bind(&req); err != nil {
 		return utils.BadRequest(c, "invalid request body")
 	}
 
-	registerResult, err := h.authService.Register(req)
+	registerResult, err := handler.authService.Register(req)
 	if err != nil {
 		errMsg := err.Error()
 		switch {
@@ -111,4 +111,18 @@ func (h *AuthHandler) Register(c echo.Context) error {
 	}
 
 	return utils.OK(c, response)
+}
+
+func (handler *AuthHandler) Logout(c echo.Context) error {
+	var req requests.LogoutRequest
+	if err := c.Bind(&req); err != nil {
+		return utils.BadRequest(c, "invalid request body")
+	}
+	token := c.Get("token").(string)
+
+	err := handler.authService.Logout(token, req)
+	if err != nil {
+		return utils.InternalServerError(c, "logout failed")
+	}
+	return utils.OK(c, "LAW")
 }

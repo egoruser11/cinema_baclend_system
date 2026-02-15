@@ -15,9 +15,14 @@ func SetupUserRoutes(e *echo.Echo, userHandler *handlers.UserHandler, db *gorm.D
 	}
 }
 
-func SetupAuthRoutes(e *echo.Echo, authHandler *handlers.AuthHandler) {
+func SetupAuthRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, db *gorm.DB) {
 	e.POST("api/v1/auth/login", authHandler.Login)
 	e.POST("api/v1/auth/register", authHandler.Register)
+	authMiddlewareGroup := e.Group("api/v1/auth/")
+	authMiddlewareGroup.Use(middleware.AuthMiddleware(db))
+	{
+		authMiddlewareGroup.GET("logout", authHandler.Logout)
+	}
 }
 
 func SetupAdminMovieRoutes(e *echo.Echo, adminMovieHandler *handlers.AdminMovieHandler, db *gorm.DB) {
@@ -38,8 +43,8 @@ func SetupAdminPremiereRoutes(e *echo.Echo, adminPremiereHandler *handlers.Admin
 	{
 		premiereGroup.POST("create", adminPremiereHandler.Create)
 		premiereGroup.PATCH("update", adminPremiereHandler.Update)
-		//premiereGroup.DELETE("delete", adminPremiereHandler.Delete)
+		premiereGroup.DELETE("delete", adminPremiereHandler.Delete)
 		premiereGroup.GET("", adminPremiereHandler.Index)
-		//premiereGroup.GET("show", adminPremiereHandler.Show)
+		premiereGroup.GET("show", adminPremiereHandler.Show)
 	}
 }

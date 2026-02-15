@@ -53,7 +53,7 @@ func main() {
 		MaxAge:           86400,
 	}))
 
-	routes.SetupAuthRoutes(e, authHandler)
+	routes.SetupAuthRoutes(e, authHandler, db)
 	routes.SetupUserRoutes(e, userHandler, db)
 	routes.SetupAdminMovieRoutes(e, adminMovieHandler, db)
 	routes.SetupAdminPremiereRoutes(e, adminPremiereHandler, db)

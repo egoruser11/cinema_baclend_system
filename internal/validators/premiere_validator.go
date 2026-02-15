@@ -82,7 +82,7 @@ func ValidateIndexPremiers(db *gorm.DB, req requests.PremiereIndexRequest) (map[
 		if (*req.Sort != "price" && *req.Sort != "booked_count" && *req.Sort != "total_seats" && *req.Sort != "start_time") || *req.Sort == "" {
 			errors["sort"] = "Sort param is not correct"
 		} else {
-			filter["sort"] = req.Sort
+			filter["sort"] = *req.Sort
 		}
 	}
 	if req.IsDesc != nil {

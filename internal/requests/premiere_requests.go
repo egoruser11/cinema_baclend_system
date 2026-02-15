@@ -42,3 +42,7 @@ type PremiereIndexRequest struct {
 	Offset *uint `query:"offset"`
 	Limit  *uint `query:"limit"`
 }
+
+type PremiereIdRequest struct {
+	Id uint `query:"id"`
+}

@@ -55,8 +55,9 @@ func (s *AuthService) Login(username, password, email, deviceInfo string) (*mode
 	return &user, tokenString, nil
 }
 
-func (s *AuthService) Logout(tokenString string, isFullLogout bool) error {
+func (s *AuthService) Logout(tokenString string, req requests.LogoutRequest) error {
 	var token models.Token
+	isFullLogout := req.IsFullLogout
 	result := s.db.Model(&token).Where("token = ?", tokenString).First(&token)
 
 	if result.Error != nil {

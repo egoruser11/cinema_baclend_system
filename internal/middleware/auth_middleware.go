@@ -40,6 +40,7 @@ func AuthMiddleware(db *gorm.DB) echo.MiddlewareFunc {
 				db.Delete(&token)
 				return utils.Unauthorized(c, "token is expired")
 			}
+			c.Set("token", tokenString)
 			if token.User.Status != models.ActiveUserStatus {
 				return utils.Unauthorized(c, "user is not active")
 			}

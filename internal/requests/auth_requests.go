@@ -13,3 +13,7 @@ type RegisterRequest struct {
 	Age        uint   `json:"age"`
 	DeviceInfo string `json:"device_info"`
 }
+
+type LogoutRequest struct {
+	IsFullLogout bool `query:"is_full_logout"`
+}
