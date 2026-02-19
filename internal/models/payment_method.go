@@ -10,7 +10,6 @@ type PaymentMethodType string
 const (
 	PaymentCard   PaymentMethodType = "card"
 	PaymentWallet PaymentMethodType = "wallet"
-	PaymentCoins  PaymentMethodType = "coins"
 )
 
 type PaymentMethod struct {
@@ -18,7 +17,7 @@ type PaymentMethod struct {
 	UserID    uint              `gorm:"not null" json:"user_id"`
 	User      User              `gorm:"foreignKey:UserID" json:"-"`
 	Type      PaymentMethodType `gorm:"type:varchar(20);not null" json:"type"`
-	Details   string            `gorm:"type:text" json:"details,omitempty"` // зашифрованные данные карты
+	Details   string            `gorm:"type:text" json:"details,omitempty"`
 	IsDefault bool              `gorm:"default:false" json:"is_default"`
 	IsActive  bool              `gorm:"default:true;" json:"is_active"`
 

@@ -5,7 +5,6 @@ import (
 	"cinema_backend_system/internal/services"
 	"cinema_backend_system/internal/utils"
 	"github.com/labstack/echo/v4"
-	"strings"
 )
 
 type AuthHandler struct {
@@ -61,40 +60,7 @@ func (handler *AuthHandler) Register(c echo.Context) error {
 	registerResult, err := handler.authService.Register(req)
 	if err != nil {
 		errMsg := err.Error()
-		switch {
-		case strings.Contains(errMsg, "Username is required"):
-			return utils.BadRequest(c, errMsg)
-		case strings.Contains(errMsg, "Username must be at least"):
-			return utils.BadRequest(c, errMsg)
-		case strings.Contains(errMsg, "Username must be less than"):
-			return utils.BadRequest(c, errMsg)
-		case strings.Contains(errMsg, "Username can only contain"):
-			return utils.BadRequest(c, errMsg)
-		case strings.Contains(errMsg, "Email is required"):
-			return utils.BadRequest(c, errMsg)
-		case strings.Contains(errMsg, "Invalid email"):
-			return utils.BadRequest(c, errMsg)
-		case strings.Contains(errMsg, "Password is required"):
-			return utils.BadRequest(c, errMsg)
-		case strings.Contains(errMsg, "Password must be at least"):
-			return utils.BadRequest(c, errMsg)
-		case strings.Contains(errMsg, "Password must be less than"):
-			return utils.BadRequest(c, errMsg)
-		case strings.Contains(errMsg, "Age must be at least"):
-			return utils.BadRequest(c, errMsg)
-		case strings.Contains(errMsg, "Age must be less than"):
-			return utils.BadRequest(c, errMsg)
-		case strings.Contains(errMsg, "Device info is required"):
-			return utils.BadRequest(c, errMsg)
-		case strings.Contains(errMsg, "Username or email already exists"):
-			return utils.BadRequest(c, errMsg)
-		case errMsg == "Failed to hash password":
-			return utils.BadRequest(c, "Failed to hash password")
-		case errMsg == "Failed to create user":
-			return utils.BadRequest(c, "Failed to create user")
-		default:
-			return utils.InternalServerError(c, "registration failed: "+errMsg)
-		}
+		return utils.BadRequest(c, errMsg)
 	}
 
 	c.Response().Header().Set("Authorization", "Bearer "+registerResult.Token)
