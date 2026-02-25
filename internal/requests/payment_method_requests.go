@@ -9,3 +9,11 @@ type PaymentMethodCreateRequest struct {
 	Details   string                   `json:"details" binding:"required"`
 	IsDefault bool                     `json:"is_default" binding:"required,min=1,max=20"`
 }
+
+type PaymentMethodUpdateRequest struct {
+	Id        *uint                     `json:"id" binding:"required"`
+	Type      *models.PaymentMethodType `json:"type" binding:"required"`
+	Details   *string                   `json:"details" binding:"required"`
+	IsDefault *bool                     `json:"is_default" binding:"required"`
+	IsActive  *bool                     `json:"is_active" binding:"required"`
+}

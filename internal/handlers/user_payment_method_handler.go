@@ -4,7 +4,6 @@ import (
 	"cinema_backend_system/internal/requests"
 	"cinema_backend_system/internal/services"
 	"cinema_backend_system/internal/utils"
-	"fmt"
 	"github.com/labstack/echo/v4"
 )
 
@@ -17,12 +16,23 @@ func NewUserPaymentMethodHandler(userPaymentMethodService *services.UserPaymentM
 }
 
 func (handler *UserPaymentMethodHandler) Create(c echo.Context) error {
-	fmt.Sprintln("AAA")
 	var req requests.PaymentMethodCreateRequest
 	if err := c.Bind(&req); err != nil {
 		return utils.BadRequest(c, err.Error())
 	}
 	method, err := handler.userPaymentMethodService.Create(c, req)
+	if err != nil {
+		return utils.BadRequest(c, err.Error())
+	}
+	return utils.OK(c, method)
+}
+
+func (handler *UserPaymentMethodHandler) Update(c echo.Context) error {
+	var req requests.PaymentMethodUpdateRequest
+	if err := c.Bind(&req); err != nil {
+		return utils.BadRequest(c, err.Error())
+	}
+	method, err := handler.userPaymentMethodService.Update(c, req)
 	if err != nil {
 		return utils.BadRequest(c, err.Error())
 	}

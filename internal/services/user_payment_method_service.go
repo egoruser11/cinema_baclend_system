@@ -38,3 +38,19 @@ func (service *UserPaymentMethodService) Create(c echo.Context, req requests.Pay
 	return paymentMethod, nil
 
 }
+
+func (service *UserPaymentMethodService) Update(c echo.Context, req requests.PaymentMethodUpdateRequest) (*models.PaymentMethod, error) {
+	errorsValid, updates, ok := validators.ValidateUpdatePaymentMethod(service.db, req)
+	if !ok {
+		return nil, errors.New(utils.InputErrorsValid(errorsValid))
+	}
+	var paymentMethod models.PaymentMethod
+	userId := c.Get("user_data").(*models.User).ID
+	service.db.Model(&models.PaymentMethod{}).Where("id = ?", *req.Id).First(&paymentMethod)
+	if paymentMethod.UserID != userId {
+		return nil, errors.New("Payment method not found, please dont do this")
+	}
+	service.db.Model(&paymentMethod).Updates(updates)
+
+	return &paymentMethod, nil
+}
