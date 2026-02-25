@@ -17,3 +17,10 @@ type PaymentMethodUpdateRequest struct {
 	IsDefault *bool                     `json:"is_default" binding:"required"`
 	IsActive  *bool                     `json:"is_active" binding:"required"`
 }
+
+type PaymentMethodIndexRequest struct {
+	Sort   *string `query:"sort"`   //active, not_active
+	Search *string `query:"search"` //details
+	Offset *uint   `query:"offset"`
+	Limit  *uint   `query:"limit"`
+}

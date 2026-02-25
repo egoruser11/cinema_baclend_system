@@ -38,3 +38,15 @@ func (handler *UserPaymentMethodHandler) Update(c echo.Context) error {
 	}
 	return utils.OK(c, method)
 }
+
+func (handler *UserPaymentMethodHandler) Index(c echo.Context) error {
+	var req requests.PaymentMethodIndexRequest
+	if err := c.Bind(&req); err != nil {
+		return utils.BadRequest(c, err.Error())
+	}
+	methods, err := handler.userPaymentMethodService.Index(c, req)
+	if err != nil {
+		return utils.BadRequest(c, err.Error())
+	}
+	return utils.OK(c, methods)
+}

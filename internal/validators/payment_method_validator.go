@@ -51,3 +51,36 @@ func ValidateUpdatePaymentMethod(db *gorm.DB, req requests.PaymentMethodUpdateRe
 	}
 	return errors, updates, len(errors) == 0
 }
+
+func ValidateIndexPaymentMethod(req requests.PaymentMethodIndexRequest) (map[string]string, map[string]interface{}, bool) {
+	errors := make(map[string]string)
+	filters := make(map[string]interface{})
+	if req.Search != nil {
+		if *req.Search != "" {
+			filters["search"] = *req.Search
+		} else {
+			errors["search"] = "search is required if your input"
+		}
+	}
+	if req.Limit != nil {
+		if *req.Limit != 0 {
+			filters["limit"] = int(*req.Limit)
+		}
+	} else {
+		filters["limit"] = 10
+	}
+	if req.Offset != nil {
+		filters["offset"] = int(*req.Offset)
+	} else {
+		filters["offset"] = 0
+	}
+
+	if req.Sort != nil {
+		if *req.Sort == "" || (*req.Sort != "active" && *req.Sort != "not_active") {
+			errors["sort"] = "sort is incorrect"
+		} else {
+			filters["sort"] = *req.Sort
+		}
+	}
+	return errors, filters, len(errors) == 0
+}

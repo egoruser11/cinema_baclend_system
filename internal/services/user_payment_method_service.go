@@ -8,6 +8,7 @@ import (
 	"errors"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
+	"strings"
 )
 
 type UserPaymentMethodService struct {
@@ -48,9 +49,44 @@ func (service *UserPaymentMethodService) Update(c echo.Context, req requests.Pay
 	userId := c.Get("user_data").(*models.User).ID
 	service.db.Model(&models.PaymentMethod{}).Where("id = ?", *req.Id).First(&paymentMethod)
 	if paymentMethod.UserID != userId {
-		return nil, errors.New("Payment method not found, please dont do this")
+		return nil, errors.New("Payment method not found, please dont check others mayments methods!")
 	}
 	service.db.Model(&paymentMethod).Updates(updates)
 
 	return &paymentMethod, nil
+}
+
+func (service *UserPaymentMethodService) Index(c echo.Context, req requests.PaymentMethodIndexRequest) ([]*models.PaymentMethod, error) {
+	errorsValid, filters, ok := validators.ValidateIndexPaymentMethod(req)
+	if !ok {
+		return nil, errors.New(utils.InputErrorsValid(errorsValid))
+	}
+	userId := c.Get("user_data").(*models.User).ID
+	var paymentMethods []*models.PaymentMethod
+	query := service.db.Model(&models.PaymentMethod{}).Where("user_id = ?", userId)
+	var count int64
+	query.Count(&count)
+	if count == 0 {
+		return nil, errors.New("Payment method not found")
+	}
+	if len(filters) > 0 {
+		sort, existsSort := filters["sort"]
+		if existsSort {
+			if sort == "active" {
+				query.Where("is_active = ?", true)
+			} else {
+				query.Where("is_active = ?", false)
+			}
+		}
+		search, existsSearch := filters["search"]
+		if existsSearch {
+			searchString := search.(string)
+			resSearch := "%" + strings.ToLower(searchString) + "%"
+			query.Where("LOWER(details) LIKE ?", resSearch)
+		}
+	}
+	limit := filters["limit"].(int)
+	offset := filters["offset"].(int)
+	query.Limit(limit).Offset(offset).Find(&paymentMethods)
+	return paymentMethods, nil
 }
