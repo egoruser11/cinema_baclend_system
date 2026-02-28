@@ -50,3 +50,27 @@ func (handler *UserPaymentMethodHandler) Index(c echo.Context) error {
 	}
 	return utils.OK(c, methods)
 }
+
+func (handler *UserPaymentMethodHandler) Delete(c echo.Context) error {
+	var req requests.PaymentMethodDeleteRequest
+	if err := c.Bind(&req); err != nil {
+		return utils.BadRequest(c, err.Error())
+	}
+	deletedIds, err := handler.userPaymentMethodService.Delete(c, req)
+	if err != nil {
+		return utils.BadRequest(c, err.Error())
+	}
+	return utils.OK(c, deletedIds)
+}
+
+func (handler *UserPaymentMethodHandler) Show(c echo.Context) error {
+	var req requests.PaymentMethodIdRequest
+	if err := c.Bind(&req); err != nil {
+		return utils.BadRequest(c, err.Error())
+	}
+	method, err := handler.userPaymentMethodService.Show(c, req)
+	if err != nil {
+		return utils.BadRequest(c, err.Error())
+	}
+	return utils.OK(c, method)
+}

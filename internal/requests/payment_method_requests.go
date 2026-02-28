@@ -24,3 +24,11 @@ type PaymentMethodIndexRequest struct {
 	Offset *uint   `query:"offset"`
 	Limit  *uint   `query:"limit"`
 }
+
+type PaymentMethodDeleteRequest struct {
+	Ids []*uint `query:"ids" binding:"required"`
+}
+
+type PaymentMethodIdRequest struct {
+	Id uint `query:"id" binding:"required"`
+}

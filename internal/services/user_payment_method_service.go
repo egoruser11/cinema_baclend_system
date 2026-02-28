@@ -90,3 +90,45 @@ func (service *UserPaymentMethodService) Index(c echo.Context, req requests.Paym
 	query.Limit(limit).Offset(offset).Find(&paymentMethods)
 	return paymentMethods, nil
 }
+
+func (service UserPaymentMethodService) Delete(c echo.Context, req requests.PaymentMethodDeleteRequest) ([]uint, error) {
+	var userPaymentMethods []models.PaymentMethod
+	userId := c.Get("user_data").(*models.User).ID
+	if len(req.Ids) == 0 {
+		return nil, errors.New("No payment method to delete , please enter same 1 value")
+	}
+	err := service.db.Model(&models.PaymentMethod{}).Where("user_id = ?", userId).Find(&userPaymentMethods)
+	if err.Error != nil {
+		return nil, errors.New("No , she is not yours to torment")
+	}
+	if len(userPaymentMethods) == 0 {
+		return nil, errors.New("Payment methodx not found , you can not delete")
+	}
+	deleteIds := []uint{}
+	for _, paymentMethod := range userPaymentMethods {
+		for _, id := range req.Ids {
+			if *id == paymentMethod.ID {
+				deleteIds = append(deleteIds, *id)
+			}
+		}
+	}
+	if len(deleteIds) > 0 {
+		return deleteIds, nil
+	}
+	return nil, errors.New("Your input not your payment method, dont do this!")
+}
+
+func (service UserPaymentMethodService) Show(c echo.Context, req requests.PaymentMethodIdRequest) (*models.PaymentMethod, error) {
+	var paymentMethods []models.PaymentMethod
+	userId := c.Get("user_data").(*models.User).ID
+	err := service.db.Model(&models.PaymentMethod{}).Where("user_id = ?", userId).Find(&paymentMethods).Error
+	if err != nil {
+		return nil, errors.New("No , she is not yours to torment")
+	}
+	for i := 0; i < len(paymentMethods); i++ {
+		if paymentMethods[i].ID == req.Id {
+			return &paymentMethods[i], nil
+		}
+	}
+	return nil, errors.New("Your input not your payment method, dont do this!")
+}
