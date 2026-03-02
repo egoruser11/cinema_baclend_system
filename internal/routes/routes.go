@@ -57,6 +57,6 @@ func SetupUserPaymentMethodsRoutes(e *echo.Echo, userPaymentMethodHandler *handl
 		premiereGroup.PATCH("update", userPaymentMethodHandler.Update)
 		premiereGroup.DELETE("delete", userPaymentMethodHandler.Delete)
 		premiereGroup.GET("", userPaymentMethodHandler.Index)
-		//premiereGroup.GET("show", userPaymentMethodHandler.Show)
+		premiereGroup.GET("show", userPaymentMethodHandler.Show)
 	}
 }

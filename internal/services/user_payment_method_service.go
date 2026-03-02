@@ -8,6 +8,7 @@ import (
 	"errors"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
+	"strconv"
 	"strings"
 )
 
@@ -92,42 +93,59 @@ func (service *UserPaymentMethodService) Index(c echo.Context, req requests.Paym
 }
 
 func (service UserPaymentMethodService) Delete(c echo.Context, req requests.PaymentMethodDeleteRequest) ([]uint, error) {
-	var userPaymentMethods []models.PaymentMethod
+	var AuthUserPaymentMethods []models.PaymentMethod
 	userId := c.Get("user_data").(*models.User).ID
-	if len(req.Ids) == 0 {
+	idsStr := strings.Split(req.Ids, ",")
+	ids := []uint{}
+	for _, idStr := range idsStr {
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			return nil, err
+		}
+		ids = append(ids, uint(id))
+	}
+	if len(ids) == 0 {
 		return nil, errors.New("No payment method to delete , please enter same 1 value")
 	}
-	err := service.db.Model(&models.PaymentMethod{}).Where("user_id = ?", userId).Find(&userPaymentMethods)
+	err := service.db.Model(&models.PaymentMethod{}).Where("user_id = ?", userId).Find(&AuthUserPaymentMethods)
 	if err.Error != nil {
-		return nil, errors.New("No , she is not yours to torment")
+		return nil, errors.New("No , she is not longer yours to torment")
 	}
-	if len(userPaymentMethods) == 0 {
+	if len(AuthUserPaymentMethods) == 0 {
 		return nil, errors.New("Payment methodx not found , you can not delete")
 	}
 	deleteIds := []uint{}
-	for _, paymentMethod := range userPaymentMethods {
-		for _, id := range req.Ids {
-			if *id == paymentMethod.ID {
-				deleteIds = append(deleteIds, *id)
+	for _, paymentMethod := range AuthUserPaymentMethods {
+		for _, id := range ids {
+			if id == paymentMethod.ID {
+				deleteIds = append(deleteIds, id)
 			}
 		}
 	}
 	if len(deleteIds) > 0 {
+		errorDelete := service.db.Where("id in (?)", deleteIds).Delete(&models.PaymentMethod{}).Error
+		if errorDelete != nil {
+			return nil, errors.New("KINGSLAYER!!!")
+
+		}
 		return deleteIds, nil
 	}
 	return nil, errors.New("Your input not your payment method, dont do this!")
 }
 
 func (service UserPaymentMethodService) Show(c echo.Context, req requests.PaymentMethodIdRequest) (*models.PaymentMethod, error) {
-	var paymentMethods []models.PaymentMethod
+	var AuthUserPaymentMethods []models.PaymentMethod
 	userId := c.Get("user_data").(*models.User).ID
-	err := service.db.Model(&models.PaymentMethod{}).Where("user_id = ?", userId).Find(&paymentMethods).Error
-	if err != nil {
-		return nil, errors.New("No , she is not yours to torment")
+	err := service.db.Model(&models.PaymentMethod{}).Where("user_id = ?", userId).Find(&AuthUserPaymentMethods).Error
+	if len(AuthUserPaymentMethods) == 0 {
+		return nil, errors.New("You dont have any payment methods")
 	}
-	for i := 0; i < len(paymentMethods); i++ {
-		if paymentMethods[i].ID == req.Id {
-			return &paymentMethods[i], nil
+	if err != nil {
+		return nil, errors.New("No , she is not longer yours to torment")
+	}
+	for i := 0; i < len(AuthUserPaymentMethods); i++ {
+		if AuthUserPaymentMethods[i].ID == req.Id {
+			return &AuthUserPaymentMethods[i], nil
 		}
 	}
 	return nil, errors.New("Your input not your payment method, dont do this!")

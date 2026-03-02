@@ -26,7 +26,7 @@ type PaymentMethodIndexRequest struct {
 }
 
 type PaymentMethodDeleteRequest struct {
-	Ids []*uint `query:"ids" binding:"required"`
+	Ids string `query:"ids" binding:"required"` //"1,2,3"
 }
 
 type PaymentMethodIdRequest struct {
