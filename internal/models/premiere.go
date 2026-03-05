@@ -1,7 +1,6 @@
 package models
 
 import (
-	"encoding/json"
 	"errors"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
@@ -9,9 +8,8 @@ import (
 )
 
 type Seat struct {
-	Row    int  `json:"row"`
-	Number int  `json:"number"`
-	Booked bool `json:"booked"`
+	Row    int `json:"row"`
+	Number int `json:"number"`
 }
 
 type Premiere struct {
@@ -35,21 +33,6 @@ type Premiere struct {
 	EndTime   time.Time `gorm:"not null" json:"end_time"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
-}
-
-func (premiere *Premiere) AfterFind(tx *gorm.DB) (err error) {
-	premiere.TotalSeats = int(premiere.Rows * premiere.SeatsPerRow)
-
-	// Считаем занятые места из JSON
-	var seats []Seat
-	if err := json.Unmarshal(premiere.BookedSeats, &seats); err == nil {
-		for _, seat := range seats {
-			if seat.Booked {
-				premiere.BookedCount++
-			}
-		}
-	}
-	return
 }
 
 func GetAvailablePremieres(db *gorm.DB, movieId uint) ([]Premiere, error) {
