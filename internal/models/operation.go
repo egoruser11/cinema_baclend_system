@@ -7,6 +7,12 @@ import (
 type OperationStatus string
 
 type OperationType string
+
+const (
+	Purchase      OperationType = "purchase"
+	Replenishment OperationType = "replenishment"
+)
+
 type Operation struct {
 	ID              uint            `gorm:"primaryKey" json:"id"`
 	UserID          uint            `gorm:"not null;index" json:"user_id"`

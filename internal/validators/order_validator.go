@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
-	"time"
 )
 
 func ValidateCreateOrder(c echo.Context, db *gorm.DB, req requests.OrderCreateRequest) (map[string]string, bool) {
@@ -18,31 +17,33 @@ func ValidateCreateOrder(c echo.Context, db *gorm.DB, req requests.OrderCreateRe
 		errors["premiere"] = "Premiere not found"
 	}
 	userId := c.Get("user_data").(*models.User).ID
-	err = db.Model(&models.PaymentMethod{}).Where("id = ? AND user_id = ?", req.PaymentMethodID, userId).Error
-	if err != nil {
-		errors["payment_method"] = "PaymentMethod not found, or its not your payment method , please don do this!"
-	}
-
-	bookedSeatsMap := map[uint]int{}
+	bookedSeatsMap := map[int][]int{}
 	err = json.Unmarshal(premiere.BookedSeats, &bookedSeatsMap)
 	if err != nil {
 		errors["db"] = "BookedSeats json unmarshal error"
 	}
-	for rowBooked, seatBooked := range bookedSeatsMap {
-		for row, seat := range req.Seats {
-			if row == rowBooked {
-				if seatBooked == seat {
-					errors["seats"] = fmt.Sprintf("Seat booked for %s is already booked", seatBooked)
+	for rowBooked, seatsBooked := range bookedSeatsMap {
+		for _, seatBooked := range seatsBooked {
+			for row, seats := range req.Seats {
+				for _, seat := range seats {
+					if int(row) == rowBooked {
+						if seatBooked == int(seat) {
+							errors["seats"] = fmt.Sprintf("Seat booked for %s is already booked", seatBooked)
+						}
+					}
 				}
 			}
 		}
 	}
-	if req.CountMinutesBeforePay != nil {
-		if time.Now().Add(time.Duration(*req.CountMinutesBeforePay) * time.Minute).After(premiere.StartTime) {
-			errors["count_minutes_before_pay"] = "Count minutes before pay not valid"
-		}
-		if *req.CountMinutesBeforePay > 300 {
-			errors["count_minutes_before_pay"] = "Count minutes before pay not valid"
+	seenSeats := map[string]bool{}
+	for row, seats := range req.Seats {
+		for _, seat := range seats {
+			key := fmt.Sprintf("%d-%d", row, seat)
+			if seenSeats[key] {
+				errors["seats"] = fmt.Sprintf("Seats cannot dublicate!", seat)
+				break
+			}
+			seenSeats[key] = true
 		}
 	}
 	if req.Coins != nil {
