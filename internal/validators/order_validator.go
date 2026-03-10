@@ -25,6 +25,9 @@ func ValidateCreateOrder(c echo.Context, db *gorm.DB, req requests.OrderCreateRe
 	for rowBooked, seatsBooked := range bookedSeatsMap {
 		for _, seatBooked := range seatsBooked {
 			for row, seats := range req.Seats {
+				if row > premiere.Rows {
+					errors["rows"] = fmt.Sprintf("Row %d is uncorrect", row)
+				}
 				for _, seat := range seats {
 					if int(row) == rowBooked {
 						if seatBooked == int(seat) {
@@ -53,5 +56,5 @@ func ValidateCreateOrder(c echo.Context, db *gorm.DB, req requests.OrderCreateRe
 			errors["coins"] = fmt.Sprintf("Coins %d < %d KINGSLAYEEER", coins, *req.Coins)
 		}
 	}
-	return errors, true
+	return errors, len(errors) == 0
 }

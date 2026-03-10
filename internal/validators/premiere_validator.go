@@ -78,6 +78,9 @@ func ValidateUpdatePremiere(db *gorm.DB, req requests.PremiereUpdateRequest) (ma
 func ValidateIndexPremiers(db *gorm.DB, req requests.PremiereIndexRequest) (map[string]string, map[string]interface{}, bool) {
 	errors := make(map[string]string)
 	filter := make(map[string]interface{})
+	if req.MovieID == nil {
+		errors["movie_id"] = "Movie is required"
+	}
 	if req.Sort != nil {
 		if (*req.Sort != "price" && *req.Sort != "booked_count" && *req.Sort != "total_seats" && *req.Sort != "start_time") || *req.Sort == "" {
 			errors["sort"] = "Sort param is not correct"

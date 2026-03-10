@@ -46,11 +46,13 @@ func (service *UserOrderService) Create(c echo.Context, req requests.OrderCreate
 		TotalAmount: totalAmount,
 		Status:      models.OrderPending,
 	}
-	err := service.db.Create(order).Error
-	if err != nil {
+	if err := service.db.Create(order).Error; err != nil {
 		return nil, err
 	}
-	err = ReserveSeats(service.db, countSeatsInOrder, premiere, seatsInOrder)
+	if err := service.db.Preload("Premiere.Movie").First(order, order.ID).Error; err != nil {
+		return nil, err
+	}
+	err := ReserveSeats(service.db, countSeatsInOrder, premiere, seatsInOrder)
 	if err != nil {
 		return nil, err
 	}

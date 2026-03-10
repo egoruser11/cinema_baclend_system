@@ -49,7 +49,7 @@ func SetupAdminPremiereRoutes(e *echo.Echo, adminPremiereHandler *handlers.Admin
 	}
 }
 
-func SetupUserPaymentMethodsRoutes(e *echo.Echo, userPaymentMethodHandler *handlers.UserPaymentMethodHandler, db *gorm.DB) {
+func SetupUserPaymentMethodRoutes(e *echo.Echo, userPaymentMethodHandler *handlers.UserPaymentMethodHandler, db *gorm.DB) {
 	premiereGroup := e.Group("/api/v1/payment_method/")
 	premiereGroup.Use(middleware.AuthMiddleware(db))
 	{
@@ -58,5 +58,17 @@ func SetupUserPaymentMethodsRoutes(e *echo.Echo, userPaymentMethodHandler *handl
 		premiereGroup.DELETE("delete", userPaymentMethodHandler.Delete)
 		premiereGroup.GET("", userPaymentMethodHandler.Index)
 		premiereGroup.GET("show", userPaymentMethodHandler.Show)
+	}
+}
+
+func SetupUserOrderRoutes(e *echo.Echo, userOrderHandler *handlers.UserOrderHandler, db *gorm.DB) {
+	premiereGroup := e.Group("/api/v1/order/")
+	premiereGroup.Use(middleware.AuthMiddleware(db))
+	{
+		premiereGroup.POST("create", userOrderHandler.Create)
+		//premiereGroup.PATCH("update", userPaymentMethodHandler.Update)
+		//premiereGroup.DELETE("delete", userPaymentMethodHandler.Delete)
+		//premiereGroup.GET("", userPaymentMethodHandler.Index)
+		//premiereGroup.GET("show", userPaymentMethodHandler.Show)
 	}
 }

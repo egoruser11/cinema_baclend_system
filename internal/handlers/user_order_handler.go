@@ -15,7 +15,7 @@ func NewUserOrderHandler(userOrderService *services.UserOrderService) *UserOrder
 	return &UserOrderHandler{userOrderService: userOrderService}
 }
 
-func (handler *UserOrderHandler) CreateOrder(c echo.Context) error {
+func (handler *UserOrderHandler) Create(c echo.Context) error {
 	var req requests.OrderCreateRequest
 	if err := c.Bind(&req); err != nil {
 		return utils.BadRequest(c, err.Error())

@@ -24,7 +24,7 @@ type PremiereUpdateRequest struct {
 }
 
 type PremiereIndexRequest struct {
-	MovieID uint `query:"movie_id" binding:"required"`
+	MovieID *uint `query:"movie_id" binding:"required"`
 
 	Sort   *string `query:"sort"` //price , booked_count , total_seats , start_time
 	IsDesc *bool   `query:"is_desc"`

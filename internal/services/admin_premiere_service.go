@@ -65,7 +65,7 @@ func (service *AdminPremiereService) Index(req requests.PremiereIndexRequest) ([
 	if !ok {
 		return nil, errors.New(utils.InputErrorsValid(errorsValid))
 	}
-	premieres, err := models.GetAvailablePremieres(service.db, req.MovieID)
+	premieres, err := models.GetAvailablePremieres(service.db, *req.MovieID)
 	if len(premieres) == 0 {
 		return []*models.Premiere{}, nil
 	}
@@ -73,12 +73,10 @@ func (service *AdminPremiereService) Index(req requests.PremiereIndexRequest) ([
 	for _, premiere := range premieres {
 		premiereIds = append(premiereIds, premiere.ID)
 	}
-
 	if err != nil {
 		return nil, errors.New("Can not find premieres , please try again")
 	}
 	query := service.db.Model(&models.Premiere{}).Where("id in (?)", premiereIds).Preload("Movie")
-
 	if len(filter) > 0 {
 		dayPremiere, existsDayPremiere := filter["day_premiere"]
 		if existsDayPremiere {
