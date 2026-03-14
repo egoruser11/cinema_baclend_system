@@ -22,6 +22,7 @@ type Order struct {
 	Seats       string      `gorm:"type:text;not null" json:"seats"` // "1-1,2-2,3-3"
 	TotalAmount float64     `gorm:"type:decimal(10,2);not null" json:"total_amount"`
 	Status      OrderStatus `gorm:"type:varchar(20);not null;default:'pending'" json:"status"`
+	Coins       float64     `gorm:"type:decimal(10,2);nullable" json:"coins"`
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`

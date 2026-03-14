@@ -20,7 +20,7 @@ func NewUserOrderService(db *gorm.DB) *UserOrderService {
 }
 
 func (service *UserOrderService) Create(c echo.Context, req requests.OrderCreateRequest) (*models.Order, error) {
-	errorsValid, ok := validators.ValidateCreateOrder(c, service.db, req)
+	errorsValid, ok := validators.ValidateCreateOrder(service.db, req)
 	if !ok {
 		return nil, errors.New(utils.InputErrorsValid(errorsValid))
 	}
@@ -56,5 +56,46 @@ func (service *UserOrderService) Create(c echo.Context, req requests.OrderCreate
 	if err != nil {
 		return nil, err
 	}
+	return order, nil
+}
+
+func (service *UserOrderService) Paid(c echo.Context, req requests.OrderPaidRequest) (*models.Order, error) {
+	errorsValid, ok := validators.ValidatePaidOrder(c, service.db, req)
+	if !ok {
+		_, isOrderExpired := errorsValid["orderExpired"]
+		if isOrderExpired {
+			//разбронить места
+		}
+		return nil, errors.New(utils.InputErrorsValid(errorsValid))
+	}
+	var order *models.Order
+	service.db.Model(&models.Order{}).Where("id = ?", req.OrderID).First(&order)
+	user := c.Get("user_data").(*models.User)
+	sumToPay := order.TotalAmount
+	var newUserCoinBalance uint64
+	if req.Coins != nil {
+		sumToPay -= float64(*req.Coins)
+		newUserCoinBalance = user.CoinBalance - *req.Coins
+	} else {
+		sumToAddCoins := order.TotalAmount * 0.1
+		newUserCoinBalance = user.CoinBalance + uint64(sumToAddCoins)
+	}
+	newUserMoneyBalance := user.MoneyBalance - sumToPay
+	updatesUser := map[string]interface{}{
+		"money_balance": newUserMoneyBalance,
+		"coin_balance":  newUserCoinBalance,
+	}
+	updatesOrder := map[string]interface{}{
+		"coins": func() interface{} {
+			if req.Coins != nil {
+				return *req.Coins
+			}
+			return nil
+		}(),
+		"status": models.OrderPaid,
+	}
+	service.db.Model(&models.Order{}).Where("id = ?", req.OrderID).Updates(updatesOrder)
+	service.db.Model(&models.User{}).Where("id = ?", user.ID).Updates(updatesUser)
+	//создать транзакцию
 	return order, nil
 }
