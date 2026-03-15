@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"gorm.io/gorm"
 	"sort"
+	"strconv"
+	"strings"
 )
 
 func ReserveSeats(db *gorm.DB, bookedCount int, premiere models.Premiere, seats map[uint][]uint) error {
@@ -40,4 +42,70 @@ func ReserveSeats(db *gorm.DB, bookedCount int, premiere models.Premiere, seats 
 		"booked_seats": data,
 		"booked_count": bookedCount,
 	}).Error
+}
+
+func UnReserveSeats(db *gorm.DB, premiere models.Premiere, order models.Order) error {
+	seats := strings.TrimSuffix(order.Seats, ",")
+	mapInOrderSeats := make(map[int][]int)
+	newPremiereBookedSeats := make(map[int][]int)
+
+	seatsArr := strings.Split(seats, ",")
+	for _, seat := range seatsArr {
+		parts := strings.Split(seat, " - ")
+
+		row, _ := strconv.Atoi(strings.TrimSpace(parts[0]))
+		seatNum, _ := strconv.Atoi(strings.TrimSpace(parts[1]))
+
+		mapInOrderSeats[row] = append(mapInOrderSeats[row], seatNum)
+	}
+	var bookedSeats map[int][]int
+	bookedCountNew := premiere.BookedCount
+	json.Unmarshal(premiere.BookedSeats, &bookedSeats)
+	for rowBooked, seatsInRowBooked := range bookedSeats {
+		arrCopiesSeats := []int{}
+		for rowInOrder, seatsInRowInOrder := range mapInOrderSeats {
+			if rowInOrder == rowBooked {
+				arrCopiesSeats = findInRowsCopiesSeats(seatsInRowBooked, seatsInRowInOrder)
+			}
+		}
+		if len(arrCopiesSeats) > 0 {
+			for _, seat := range seatsInRowBooked {
+				isAdd := false
+				for i := 0; i < len(arrCopiesSeats); i++ {
+					if seat == arrCopiesSeats[i] {
+						bookedCountNew--
+						isAdd = true
+					}
+				}
+				if !isAdd {
+					newPremiereBookedSeats[rowBooked] = append(newPremiereBookedSeats[rowBooked], seat)
+				}
+			}
+		} else {
+			for _, seat := range seatsInRowBooked {
+				newPremiereBookedSeats[rowBooked] = append(newPremiereBookedSeats[rowBooked], seat)
+			}
+		}
+	}
+	newBookedSeatsJson, err := json.Marshal(newPremiereBookedSeats)
+	if err != nil {
+		return err
+	}
+	db.Model(&premiere).Updates(map[string]interface{}{
+		"booked_seats": newBookedSeatsJson,
+		"booked_count": bookedCountNew,
+	})
+	return nil
+}
+
+func findInRowsCopiesSeats(seatsInRowBooked []int, seatsInRowInOrder []int) []int {
+	result := []int{}
+	for i := 0; i < len(seatsInRowBooked); i++ {
+		for j := 0; j < len(seatsInRowInOrder); j++ {
+			if seatsInRowBooked[i] == seatsInRowInOrder[j] {
+				result = append(result, seatsInRowBooked[i])
+			}
+		}
+	}
+	return result
 }

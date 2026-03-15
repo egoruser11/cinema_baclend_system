@@ -66,6 +66,7 @@ func SetupUserOrderRoutes(e *echo.Echo, userOrderHandler *handlers.UserOrderHand
 	premiereGroup.Use(middleware.AuthMiddleware(db))
 	{
 		premiereGroup.POST("create", userOrderHandler.Create)
+		premiereGroup.POST("paid", userOrderHandler.Paid)
 		//premiereGroup.PATCH("update", userPaymentMethodHandler.Update)
 		//premiereGroup.DELETE("delete", userPaymentMethodHandler.Delete)
 		//premiereGroup.GET("", userPaymentMethodHandler.Index)

@@ -64,7 +64,11 @@ func (service *UserOrderService) Paid(c echo.Context, req requests.OrderPaidRequ
 	if !ok {
 		_, isOrderExpired := errorsValid["orderExpired"]
 		if isOrderExpired {
-			//разбронить места
+			err := UnReserveSeats(service.db, models.Premiere{}, models.Order{})
+			if err != nil {
+				return nil, err
+			}
+			return nil, errors.New(utils.InputErrorsValid(errorsValid))
 		}
 		return nil, errors.New(utils.InputErrorsValid(errorsValid))
 	}
@@ -96,6 +100,16 @@ func (service *UserOrderService) Paid(c echo.Context, req requests.OrderPaidRequ
 	}
 	service.db.Model(&models.Order{}).Where("id = ?", req.OrderID).Updates(updatesOrder)
 	service.db.Model(&models.User{}).Where("id = ?", user.ID).Updates(updatesUser)
-	//создать транзакцию
+	operation := &models.Operation{
+		UserID:  user.ID,
+		OrderID: order.ID,
+		Amount:  sumToPay,
+		Type:    models.Purchase,
+		Status:  models.OperationStatusPaid,
+	}
+	err := service.db.Create(operation).Error
+	if err != nil {
+		return nil, err
+	}
 	return order, nil
 }

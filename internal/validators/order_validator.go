@@ -32,7 +32,7 @@ func ValidateCreateOrder(db *gorm.DB, req requests.OrderCreateRequest) (map[stri
 					for _, seat := range seats {
 						if int(row) == rowBooked {
 							if seatBooked == int(seat) {
-								errors["seats"] = fmt.Sprintf("Seat booked for %s is already booked", seatBooked)
+								errors["seats"] = fmt.Sprintf("Seat booked for %d is already booked", seatBooked)
 							}
 						}
 					}
@@ -45,7 +45,7 @@ func ValidateCreateOrder(db *gorm.DB, req requests.OrderCreateRequest) (map[stri
 		for _, seat := range seats {
 			key := fmt.Sprintf("%d-%d", row, seat)
 			if seenSeats[key] {
-				errors["seats"] = fmt.Sprintf("Seats cannot dublicate!", seat)
+				errors["seats"] = fmt.Sprintf("Seats cannot dublicate! %d", seat)
 				break
 			}
 			seenSeats[key] = true
