@@ -116,3 +116,5 @@ func (service *UserOrderService) Paid(c echo.Context, req requests.OrderPaidRequ
 	}
 	return order, nil
 }
+
+//index , show , delete , update.

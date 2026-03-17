@@ -17,3 +17,8 @@ type RegisterRequest struct {
 type LogoutRequest struct {
 	IsFullLogout bool `query:"is_full_logout"`
 }
+
+type ResetPasswordRequest struct {
+	OldPassword string `json:"old_password"`
+	NewPassword string `json:"new_password"`
+}

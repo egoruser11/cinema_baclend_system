@@ -64,6 +64,7 @@ func ValidatePaidOrder(c echo.Context, db *gorm.DB, req requests.OrderPaidReques
 	err := db.Model(&models.Order{}).Where("id = ?", req.OrderID).Find(&order).Error
 	if order.Status == models.OrderPaid {
 		errors["orderPaid"] = "Order is paid!"
+		return errors, false
 	}
 	if err != nil {
 		errors["order"] = "Order not found"

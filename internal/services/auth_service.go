@@ -26,14 +26,14 @@ func NewAuthService(db *gorm.DB) *AuthService {
 	return &AuthService{db: db}
 }
 
-func (s *AuthService) Login(username, password, email, deviceInfo string) (*models.User, string, error) {
+func (service *AuthService) Login(username, password, email, deviceInfo string) (*models.User, string, error) {
 	var user models.User
 	if username != "" {
-		if err := s.db.Where("username = ?", username).First(&user).Error; err != nil {
+		if err := service.db.Where("username = ?", username).First(&user).Error; err != nil {
 			return nil, "", errors.New("Invalid credentials")
 		}
 	} else {
-		if err := s.db.Where("email = ?", email).First(&user).Error; err != nil {
+		if err := service.db.Where("email = ?", email).First(&user).Error; err != nil {
 			return nil, "", errors.New("Invalid credentials")
 		}
 	}
@@ -46,7 +46,7 @@ func (s *AuthService) Login(username, password, email, deviceInfo string) (*mode
 		return nil, "", errors.New("User is not active")
 	}
 
-	tokenString, err := s.CreateToken(user.ID, deviceInfo)
+	tokenString, err := service.CreateToken(user.ID, deviceInfo)
 
 	if err != nil {
 		return nil, "", err
@@ -55,24 +55,24 @@ func (s *AuthService) Login(username, password, email, deviceInfo string) (*mode
 	return &user, tokenString, nil
 }
 
-func (s *AuthService) Logout(tokenString string, req requests.LogoutRequest) error {
+func (service *AuthService) Logout(tokenString string, req requests.LogoutRequest) error {
 	var token models.Token
 	isFullLogout := req.IsFullLogout
-	result := s.db.Model(&token).Where("token = ?", tokenString).First(&token)
+	result := service.db.Model(&token).Where("token = ?", tokenString).First(&token)
 
 	if result.Error != nil {
 		return errors.New("Failed to logout, token not exists")
 	}
 
 	if isFullLogout {
-		result = s.db.Where("user_id = ?", token.UserID).Delete(&models.Token{})
+		result = service.db.Where("user_id = ?", token.UserID).Delete(&models.Token{})
 		if result.Error != nil {
 			return errors.New("Failed to logout of all devices")
 		}
 		return nil
 	}
 
-	result = s.db.Delete(&token)
+	result = service.db.Delete(&token)
 	if result.Error != nil {
 		return errors.New("Failed to logout")
 	}
@@ -80,9 +80,9 @@ func (s *AuthService) Logout(tokenString string, req requests.LogoutRequest) err
 	return nil
 }
 
-func (s *AuthService) Register(req requests.RegisterRequest) (*RegisterResult, error) {
+func (service *AuthService) Register(req requests.RegisterRequest) (*RegisterResult, error) {
 
-	if errorsMsg, ok := validators.ValidateRegister(s.db, req); !ok {
+	if errorsMsg, ok := validators.ValidateRegister(service.db, req); !ok {
 		var errorMsgs []string
 		for field, msg := range errorsMsg {
 			errorMsgs = append(errorMsgs, field+": "+msg)
@@ -105,13 +105,13 @@ func (s *AuthService) Register(req requests.RegisterRequest) (*RegisterResult, e
 		MoneyBalance: 0.00,
 		CoinBalance:  0,
 	}
-	err = s.db.Create(user).Error
+	err = service.db.Create(user).Error
 
 	if err != nil {
 		return nil, errors.New("Failed to create user")
 	}
 
-	tokenString, err := s.CreateToken(user.ID, req.DeviceInfo)
+	tokenString, err := service.CreateToken(user.ID, req.DeviceInfo)
 	if err != nil {
 		return &RegisterResult{User: user}, err
 	}
@@ -121,7 +121,22 @@ func (s *AuthService) Register(req requests.RegisterRequest) (*RegisterResult, e
 	}, nil
 }
 
-func (s *AuthService) CreateToken(UserId uint, deviceInfo string) (string, error) {
+func (service *AuthService) ResetPassword(currentToken string, user *models.User, oldPassword, newPassword string) error {
+	if oldPassword == newPassword {
+		return errors.New("Old password cannot be equal to new password")
+	}
+	if !utils.CheckPasswordHash(oldPassword, user.PasswordHash) {
+		return errors.New("Old password is invalid")
+	}
+	newPasswordHash, err := utils.HashPassword(newPassword)
+	if err != nil {
+		return errors.New("Failed to hash password")
+	}
+	service.db.Where("user_id = ? AND token != ?", user.ID, currentToken).Delete(&models.Token{})
+	return service.db.Model(&user).Update("password_hash", newPasswordHash).Error
+}
+
+func (service *AuthService) CreateToken(UserId uint, deviceInfo string) (string, error) {
 	tokenString := utils.GenerateToken(lengthToken)
 	token := models.Token{
 		UserID:     UserId,
@@ -130,7 +145,7 @@ func (s *AuthService) CreateToken(UserId uint, deviceInfo string) (string, error
 		CreatedAt:  time.Now(),
 		DeviceInfo: deviceInfo,
 	}
-	err := s.db.Create(&token).Error
+	err := service.db.Create(&token).Error
 	if err != nil {
 		return "", errors.New("Failed to create token")
 	}

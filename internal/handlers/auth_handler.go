@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"cinema_backend_system/internal/models"
 	"cinema_backend_system/internal/requests"
 	"cinema_backend_system/internal/services"
 	"cinema_backend_system/internal/utils"
 	"github.com/labstack/echo/v4"
+	"strings"
 )
 
 type AuthHandler struct {
@@ -90,5 +92,24 @@ func (handler *AuthHandler) Logout(c echo.Context) error {
 	if err != nil {
 		return utils.InternalServerError(c, "logout failed")
 	}
-	return utils.OK(c, "LAW")
+	return utils.OK(c, "Logout ok!")
+}
+
+func (handler *AuthHandler) ResetPassword(c echo.Context) error {
+	var reqReset requests.ResetPasswordRequest
+	if err := c.Bind(&reqReset); err != nil {
+		return utils.BadRequest(c, "invalid request body")
+	}
+	user := c.Get("user_data").(*models.User)
+	authHeader := c.Request().Header.Get("Authorization")
+	parts := strings.SplitN(authHeader, " ", 2)
+	if len(parts) != 2 || parts[0] != "Bearer" {
+		return utils.Unauthorized(c, "Uncorrect auth header")
+	}
+	currentToken := parts[1]
+	err := handler.authService.ResetPassword(currentToken, user, reqReset.OldPassword, reqReset.NewPassword)
+	if err != nil {
+		return utils.InternalServerError(c, "reset password failed")
+	}
+	return utils.OK(c, "reset password ok!")
 }

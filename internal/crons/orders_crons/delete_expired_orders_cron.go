@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func main(db *gorm.DB) error {
+func Cron(db *gorm.DB) error {
 	var expiredOrders []models.Order
 	cutoffTime := time.Now().Add(-30 * time.Minute)
 	err := db.Preload("Premiere").Where("status = ? AND created_at < ?", models.OrderPending, cutoffTime).Find(&expiredOrders).Error
@@ -17,7 +17,7 @@ func main(db *gorm.DB) error {
 	if len(expiredOrders) == 0 {
 		return nil
 	}
-	err = services.UnReserveSeats(db, nil, nil, expiredOrders)
+	err = services.UnReserveSeats(db, nil, nil, expiredOrders) // тут происходит удаление
 	if err != nil {
 		return err
 	}

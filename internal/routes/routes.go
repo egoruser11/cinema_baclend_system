@@ -22,6 +22,7 @@ func SetupAuthRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, db *gorm.D
 	authMiddlewareGroup.Use(middleware.AuthMiddleware(db))
 	{
 		authMiddlewareGroup.GET("logout", authHandler.Logout)
+		authMiddlewareGroup.POST("reset/password", authHandler.ResetPassword)
 	}
 }
 
