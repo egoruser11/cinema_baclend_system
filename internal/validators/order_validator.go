@@ -62,6 +62,9 @@ func ValidatePaidOrder(c echo.Context, db *gorm.DB, req requests.OrderPaidReques
 	user := c.Get("user_data").(*models.User)
 	var order models.Order
 	err := db.Model(&models.Order{}).Where("id = ?", req.OrderID).Find(&order).Error
+	if order.Status == models.OrderPaid {
+		errors["orderPaid"] = "Order is paid!"
+	}
 	if err != nil {
 		errors["order"] = "Order not found"
 	}
@@ -70,9 +73,8 @@ func ValidatePaidOrder(c echo.Context, db *gorm.DB, req requests.OrderPaidReques
 	}
 	if order.CreatedAt.Before(time.Now().Add(-30 * time.Minute)) {
 		errors["orderExpired"] = "Order is too old, create new"
-		//надо разбронировать места.
-		db.Delete(&order)
-		return errors, true
+		//надо разбронировать места
+		return errors, false
 	}
 	if req.Coins != nil {
 		var coins uint64

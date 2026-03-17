@@ -7,10 +7,9 @@ import (
 type OrderStatus string
 
 const (
-	OrderPending   OrderStatus = "pending"
-	OrderPaid      OrderStatus = "paid"
-	OrderCancelled OrderStatus = "cancelled"
-	OrderRefunded  OrderStatus = "refunded"
+	OrderPending  OrderStatus = "pending"
+	OrderPaid     OrderStatus = "paid"
+	OrderRefunded OrderStatus = "refunded"
 )
 
 type Order struct {

@@ -44,7 +44,32 @@ func ReserveSeats(db *gorm.DB, bookedCount int, premiere models.Premiere, seats 
 	}).Error
 }
 
-func UnReserveSeats(db *gorm.DB, premiere models.Premiere, order models.Order) error {
+func UnReserveSeats(db *gorm.DB, premiere *models.Premiere, order *models.Order, orders []models.Order) error {
+	if orders != nil {
+		for _, orderCurr := range orders {
+			err := UnReserveForOneOrder(db, orderCurr, orderCurr.Premiere)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	err := UnReserveForOneOrder(db, *order, *premiere)
+	return err
+}
+
+func findInRowsCopiesSeats(seatsInRowBooked []int, seatsInRowInOrder []int) []int {
+	result := []int{}
+	for i := 0; i < len(seatsInRowBooked); i++ {
+		for j := 0; j < len(seatsInRowInOrder); j++ {
+			if seatsInRowBooked[i] == seatsInRowInOrder[j] {
+				result = append(result, seatsInRowBooked[i])
+			}
+		}
+	}
+	return result
+}
+
+func UnReserveForOneOrder(db *gorm.DB, order models.Order, premiere models.Premiere) error {
 	seats := strings.TrimSuffix(order.Seats, ",")
 	mapInOrderSeats := make(map[int][]int)
 	newPremiereBookedSeats := make(map[int][]int)
@@ -95,17 +120,6 @@ func UnReserveSeats(db *gorm.DB, premiere models.Premiere, order models.Order) e
 		"booked_seats": newBookedSeatsJson,
 		"booked_count": bookedCountNew,
 	})
+	db.Delete(&order)
 	return nil
-}
-
-func findInRowsCopiesSeats(seatsInRowBooked []int, seatsInRowInOrder []int) []int {
-	result := []int{}
-	for i := 0; i < len(seatsInRowBooked); i++ {
-		for j := 0; j < len(seatsInRowInOrder); j++ {
-			if seatsInRowBooked[i] == seatsInRowInOrder[j] {
-				result = append(result, seatsInRowBooked[i])
-			}
-		}
-	}
-	return result
 }

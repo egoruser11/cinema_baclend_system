@@ -63,8 +63,11 @@ func (service *UserOrderService) Paid(c echo.Context, req requests.OrderPaidRequ
 	errorsValid, ok := validators.ValidatePaidOrder(c, service.db, req)
 	if !ok {
 		_, isOrderExpired := errorsValid["orderExpired"]
-		if isOrderExpired {
-			err := UnReserveSeats(service.db, models.Premiere{}, models.Order{})
+		_, isOrderPaid := errorsValid["orderPaid"]
+		var order *models.Order
+		service.db.Preload("Premiere").Model(&models.Order{}).Where("id = ?", req.OrderID).First(&order)
+		if isOrderExpired && !isOrderPaid {
+			err := UnReserveSeats(service.db, &order.Premiere, order, nil)
 			if err != nil {
 				return nil, err
 			}
@@ -98,7 +101,7 @@ func (service *UserOrderService) Paid(c echo.Context, req requests.OrderPaidRequ
 		}(),
 		"status": models.OrderPaid,
 	}
-	service.db.Model(&models.Order{}).Where("id = ?", req.OrderID).Updates(updatesOrder)
+	service.db.Preload("Premiere.Movie").Model(&models.Order{}).Where("id = ?", req.OrderID).Updates(updatesOrder)
 	service.db.Model(&models.User{}).Where("id = ?", user.ID).Updates(updatesUser)
 	operation := &models.Operation{
 		UserID:  user.ID,

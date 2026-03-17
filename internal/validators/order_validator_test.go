@@ -15,11 +15,9 @@ import (
 
 // Вспомогательная функция для создания mock DB
 func setupMockDB(t *testing.T) (*gorm.DB, sqlmock.Sqlmock) {
-	// Создаем mock SQL соединение
 	sqlDB, mock, err := sqlmock.New()
 	assert.NoError(t, err)
 
-	// Открываем gorm соединение с mock
 	dialector := postgres.New(postgres.Config{
 		Conn:       sqlDB,
 		DriverName: "postgres",
@@ -55,9 +53,13 @@ func TestValidatePaidOrder(t *testing.T) {
 		{
 			name: "✅ успешная оплата только деньгами",
 			setupMocks: func(mock sqlmock.Sqlmock) {
-				// Мок для поиска заказа - убираем ORDER BY и LIMIT
-				rows := sqlmock.NewRows([]string{"id", "user_id", "total_amount", "created_at"}).
-					AddRow(1, 1, 500.0, time.Now())
+				rows := sqlmock.NewRows([]string{
+					"id", "user_id", "premiere_id", "seats",
+					"total_amount", "status", "coins", "created_at", "updated_at",
+				}).AddRow(
+					1, 1, 10, "1-1,1-2", 500.0, "pending", 0.0,
+					time.Now(), time.Now(),
+				)
 
 				mock.ExpectQuery(`^SELECT \* FROM "orders" WHERE id = \$1$`).
 					WithArgs(1).
@@ -110,15 +112,18 @@ func TestValidatePaidOrder(t *testing.T) {
 		{
 			name: "❌ заказ просрочен (больше 30 минут)",
 			setupMocks: func(mock sqlmock.Sqlmock) {
-				// Мок для поиска заказа (создан 40 минут назад) - убираем ORDER BY и LIMIT
-				rows := sqlmock.NewRows([]string{"id", "user_id", "total_amount", "created_at"}).
-					AddRow(1, 1, 500.0, time.Now().Add(-40*time.Minute))
+				rows := sqlmock.NewRows([]string{
+					"id", "user_id", "premiere_id", "seats",
+					"total_amount", "status", "coins", "created_at", "updated_at",
+				}).AddRow(
+					1, 1, 10, "1-1,1-2", 500.0, "pending", 0.0,
+					time.Now().Add(-40*time.Minute), time.Now(),
+				)
 
 				mock.ExpectQuery(`^SELECT \* FROM "orders" WHERE id = \$1$`).
 					WithArgs(1).
 					WillReturnRows(rows)
 
-				// Мок для удаления заказа
 				mock.ExpectExec(`^DELETE FROM "orders" WHERE id = \$1$`).
 					WithArgs(1).
 					WillReturnResult(sqlmock.NewResult(0, 1))
@@ -138,7 +143,6 @@ func TestValidatePaidOrder(t *testing.T) {
 		{
 			name: "❌ заказ не найден",
 			setupMocks: func(mock sqlmock.Sqlmock) {
-				// Убираем ORDER BY и LIMIT
 				mock.ExpectQuery(`^SELECT \* FROM "orders" WHERE id = \$1$`).
 					WithArgs(999).
 					WillReturnError(gorm.ErrRecordNotFound)
@@ -158,15 +162,21 @@ func TestValidatePaidOrder(t *testing.T) {
 		{
 			name: "❌ заказ принадлежит другому пользователю",
 			setupMocks: func(mock sqlmock.Sqlmock) {
-				rows := sqlmock.NewRows([]string{"id", "user_id", "total_amount", "created_at"}).
-					AddRow(1, 2, 500.0, time.Now())
+				rows := sqlmock.NewRows([]string{
+					"id", "user_id", "premiere_id", "seats",
+					"total_amount", "status", "coins", "created_at", "updated_at",
+				}).AddRow(
+					1, 2, 10, "1-1,1-2", 500.0, "pending", 0.0,
+					time.Now(), time.Now(),
+				)
 
 				mock.ExpectQuery(`^SELECT \* FROM "orders" WHERE id = \$1$`).
 					WithArgs(1).
 					WillReturnRows(rows)
 			},
 			user: &models.User{
-				ID: 1,
+				ID:           1,
+				MoneyBalance: 10000,
 			},
 			req: requests.OrderPaidRequest{
 				OrderID: 1,
@@ -180,16 +190,20 @@ func TestValidatePaidOrder(t *testing.T) {
 		{
 			name: "❌ недостаточно коинов",
 			setupMocks: func(mock sqlmock.Sqlmock) {
-				rows := sqlmock.NewRows([]string{"id", "user_id", "total_amount", "created_at"}).
-					AddRow(1, 1, 500.0, time.Now())
+				rows := sqlmock.NewRows([]string{
+					"id", "user_id", "premiere_id", "seats",
+					"total_amount", "status", "coins", "created_at", "updated_at",
+				}).AddRow(
+					1, 1, 10, "1-1,1-2", 500.0, "pending", 0.0,
+					time.Now(), time.Now(),
+				)
 
 				mock.ExpectQuery(`^SELECT \* FROM "orders" WHERE id = \$1$`).
 					WithArgs(1).
 					WillReturnRows(rows)
 
-				// Мок для получения баланса коинов (у пользователя только 50)
 				coinsRows := sqlmock.NewRows([]string{"coins"}).AddRow(50)
-				mock.ExpectQuery(`^SELECT coins FROM "users" WHERE id = \$1$`).
+				mock.ExpectQuery(`^SELECT "coins" FROM "users" WHERE id = \$1 AND "users"."deleted_at" IS NULL$`).
 					WithArgs(1).
 					WillReturnRows(coinsRows)
 			},
@@ -210,15 +224,20 @@ func TestValidatePaidOrder(t *testing.T) {
 		{
 			name: "❌ коинов больше чем стоимость заказа",
 			setupMocks: func(mock sqlmock.Sqlmock) {
-				rows := sqlmock.NewRows([]string{"id", "user_id", "total_amount", "created_at"}).
-					AddRow(1, 1, 500.0, time.Now())
+				rows := sqlmock.NewRows([]string{
+					"id", "user_id", "premiere_id", "seats",
+					"total_amount", "status", "coins", "created_at", "updated_at",
+				}).AddRow(
+					1, 1, 10, "1-1,1-2", 500.0, "pending", 0.0,
+					time.Now(), time.Now(),
+				)
 
 				mock.ExpectQuery(`^SELECT \* FROM "orders" WHERE id = \$1$`).
 					WithArgs(1).
 					WillReturnRows(rows)
 
 				coinsRows := sqlmock.NewRows([]string{"coins"}).AddRow(1000)
-				mock.ExpectQuery(`^SELECT coins FROM "users" WHERE id = \$1$`).
+				mock.ExpectQuery(`^SELECT "coins" FROM "users" WHERE id = \$1 AND "users"."deleted_at" IS NULL$`).
 					WithArgs(1).
 					WillReturnRows(coinsRows)
 			},
@@ -239,15 +258,20 @@ func TestValidatePaidOrder(t *testing.T) {
 		{
 			name: "❌ недостаточно денег на балансе",
 			setupMocks: func(mock sqlmock.Sqlmock) {
-				rows := sqlmock.NewRows([]string{"id", "user_id", "total_amount", "created_at"}).
-					AddRow(1, 1, 500.0, time.Now())
+				rows := sqlmock.NewRows([]string{
+					"id", "user_id", "premiere_id", "seats",
+					"total_amount", "status", "coins", "created_at", "updated_at",
+				}).AddRow(
+					1, 1, 10, "1-1,1-2", 500.0, "pending", 0.0,
+					time.Now(), time.Now(),
+				)
 
 				mock.ExpectQuery(`^SELECT \* FROM "orders" WHERE id = \$1$`).
 					WithArgs(1).
 					WillReturnRows(rows)
 
 				coinsRows := sqlmock.NewRows([]string{"coins"}).AddRow(50)
-				mock.ExpectQuery(`^SELECT coins FROM "users" WHERE id = \$1$`).
+				mock.ExpectQuery(`^SELECT "coins" FROM "users" WHERE id = \$1 AND "users"."deleted_at" IS NULL$`).
 					WithArgs(1).
 					WillReturnRows(coinsRows)
 			},
@@ -270,9 +294,7 @@ func TestValidatePaidOrder(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gormDB, mock := setupMockDB(t)
-
 			tt.setupMocks(mock)
-
 			c := setupEchoContext(tt.user)
 
 			errors, ok := ValidatePaidOrder(c, gormDB, tt.req)
