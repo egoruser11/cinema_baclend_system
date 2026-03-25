@@ -17,7 +17,7 @@ func Cron(db *gorm.DB) error {
 	if len(expiredOrders) == 0 {
 		return nil
 	}
-	err = services.UnReserveSeats(db, nil, nil, expiredOrders) // тут происходит удаление
+	err = services.UnReserveSeats(db, nil, nil, expiredOrders, models.OrderDeleted) // тут происходит удаление
 	if err != nil {
 		return err
 	}

@@ -100,3 +100,26 @@ func ValidatePaidOrder(c echo.Context, db *gorm.DB, req requests.OrderPaidReques
 	}
 	return errors, len(errors) == 0
 }
+
+func ValidateOrderRefund(c echo.Context, db *gorm.DB, request requests.OrderRefundedRequest) (map[string]string, bool) {
+	var order models.Order
+	user := c.Get("user_data").(*models.User)
+	errors := make(map[string]string)
+	err := db.Model(&models.Order{}).Where("id = ?", request.ID).Find(&order).Error
+	if err != nil {
+		errors["order"] = "Order not found"
+		return errors, false
+	}
+	if user.ID != order.UserID {
+		errors["order"] = "User id does not match , dont do this"
+	}
+	if order.Status != models.OrderPaid {
+		errors["orderPaid"] = "Order is not paid!"
+	}
+	var premiere models.Premiere
+	premiere = order.Premiere
+	if time.Now().After(premiere.StartTime) {
+		errors["premiere"] = "Premiere is start , ypu can not refund money , sorry!"
+	}
+	return errors, len(errors) == 0
+}

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
+	"time"
 )
 
 type UserOrderService struct {
@@ -67,7 +68,7 @@ func (service *UserOrderService) Paid(c echo.Context, req requests.OrderPaidRequ
 		var order *models.Order
 		service.db.Preload("Premiere").Model(&models.Order{}).Where("id = ?", req.OrderID).First(&order)
 		if isOrderExpired && !isOrderPaid {
-			err := UnReserveSeats(service.db, &order.Premiere, order, nil)
+			err := UnReserveSeats(service.db, &order.Premiere, order, nil, models.OrderPaid)
 			if err != nil {
 				return nil, err
 			}
@@ -78,13 +79,14 @@ func (service *UserOrderService) Paid(c echo.Context, req requests.OrderPaidRequ
 	var order *models.Order
 	service.db.Model(&models.Order{}).Where("id = ?", req.OrderID).First(&order)
 	user := c.Get("user_data").(*models.User)
+	var sumToAddCoins float64
 	sumToPay := order.TotalAmount
 	var newUserCoinBalance uint64
 	if req.Coins != nil {
 		sumToPay -= float64(*req.Coins)
 		newUserCoinBalance = user.CoinBalance - *req.Coins
 	} else {
-		sumToAddCoins := order.TotalAmount * 0.1
+		sumToAddCoins = order.TotalAmount * 0.1
 		newUserCoinBalance = user.CoinBalance + uint64(sumToAddCoins)
 	}
 	newUserMoneyBalance := user.MoneyBalance - sumToPay
@@ -93,13 +95,14 @@ func (service *UserOrderService) Paid(c echo.Context, req requests.OrderPaidRequ
 		"coin_balance":  newUserCoinBalance,
 	}
 	updatesOrder := map[string]interface{}{
-		"coins": func() interface{} {
-			if req.Coins != nil {
-				return *req.Coins
+		"coins":  req.Coins,
+		"status": models.OrderPaid,
+		"coins_to_add": func() *float64 {
+			if sumToAddCoins > 0 {
+				return &sumToAddCoins
 			}
 			return nil
-		}(),
-		"status": models.OrderPaid,
+		},
 	}
 	service.db.Preload("Premiere.Movie").Model(&models.Order{}).Where("id = ?", req.OrderID).Updates(updatesOrder)
 	service.db.Model(&models.User{}).Where("id = ?", user.ID).Updates(updatesUser)
@@ -117,4 +120,80 @@ func (service *UserOrderService) Paid(c echo.Context, req requests.OrderPaidRequ
 	return order, nil
 }
 
-//index , show , delete , update.
+func (service *UserOrderService) Refund(c echo.Context, req requests.OrderRefundedRequest) (*models.Order, error) {
+	errorsValid, ok := validators.ValidateOrderRefund(c, service.db, req)
+	if !ok {
+		return nil, errors.New(utils.InputErrorsValid(errorsValid))
+	}
+	user := c.Get("user_data").(*models.User)
+	var order models.Order
+	err := service.db.Preload("Premiere.Movie").Model(&models.Order{}).Where("id = ?", req.ID).Find(&order).Error
+	if err != nil {
+		return nil, err
+	}
+	var newUserCoinBalance uint64
+	var newUserMoneyBalance float64
+	if order.Coins == nil {
+		if time.Now().Add(2 * time.Hour).After(order.Premiere.StartTime) {
+			newUserMoneyBalance = user.MoneyBalance + (order.TotalAmount / 2)
+			newUserCoinBalance = user.CoinBalance + (*order.CoinsToPlus / 2)
+		} else {
+			newUserMoneyBalance = user.MoneyBalance + order.TotalAmount
+			newUserCoinBalance = user.CoinBalance + *order.CoinsToPlus
+		}
+	} else {
+		if user.CoinBalance < *order.CoinsToPlus {
+			var orders []models.Order
+			err = service.db.Model(&models.Order{}).Where("user_id = ? AND coins != ? AND status = ? AND created_at > ?",
+				user.ID, nil, models.OrderPaid, order.CreatedAt).Find(&orders).Error
+			if err != nil {
+				return nil, err
+			}
+			if len(orders) == 0 {
+				return nil, errors.New("ypu cannot refund order")
+			}
+			ids := []uint{}
+			sumCoinsInOtherOrders := 0
+			for _, curOrder := range orders {
+				if curOrder.Coins != nil {
+					sumCoinsInOtherOrders += int(*curOrder.Coins)
+					ids = append(ids, curOrder.ID)
+				}
+				if sumCoinsInOtherOrders+int(user.CoinBalance) >= int(*order.CoinsToPlus) {
+					break
+				}
+			}
+			if sumCoinsInOtherOrders+int(user.CoinBalance) < int(*order.CoinsToPlus) {
+				return nil, errors.New("Can not refund order")
+			}
+			var ordersRefund []models.Order
+			err = service.db.Model(&models.Order{}).Where("id in ?", ids).Find(&ordersRefund).Error
+			if err != nil {
+				return nil, err
+			}
+			err = UnReserveSeats(service.db, &order.Premiere, nil, ordersRefund, models.OrderCanceled)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			newUserCoinBalance = user.CoinBalance - *order.Coins
+		}
+		if time.Now().Add(2 * time.Hour).After(order.Premiere.StartTime) {
+			newUserMoneyBalance = user.MoneyBalance + (order.TotalAmount / 2)
+		} else {
+			newUserMoneyBalance = user.MoneyBalance + order.TotalAmount
+		}
+	}
+	updatesUser := map[string]interface{}{
+		"money_balance": newUserMoneyBalance,
+		"coin_balance":  newUserCoinBalance,
+	}
+	err = UnReserveSeats(service.db, &order.Premiere, &order, nil, models.OrderRefunded)
+	if err != nil {
+		return nil, err
+	}
+	service.db.Model(&user).Updates(updatesUser)
+	return &order, nil
+}
+
+//index , show , delete , update , refund
