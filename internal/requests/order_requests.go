@@ -6,8 +6,8 @@ type OrderCreateRequest struct {
 }
 
 type OrderPaidRequest struct {
-	OrderID uint    `gorm:"not null" json:"order_id"`
-	Coins   *uint64 `json:"coins"`
+	OrderID uint     `gorm:"not null" json:"order_id"`
+	Coins   *float64 `json:"coins"`
 }
 type OrderRefundedRequest struct {
 	ID uint `gorm:"not null" json:"id"`

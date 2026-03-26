@@ -29,7 +29,7 @@ type User struct {
 	MoneyBalance float64    `gorm:"type:decimal(10,2);default:0.00" json:"balance"`
 	Role         UserRole   `gorm:"type:varchar(20);not null;default:'user'" json:"role"`
 	Status       UserStatus `gorm:"not null" json:"status"`
-	CoinBalance  uint64     `gorm:"default:0" json:"coin_balance"`
+	CoinBalance  float64    `gorm:"default:0" json:"coin_balance"`
 	// Связи
 	PaymentMethods []PaymentMethod `gorm:"foreignKey:UserID" json:"payment_methods,omitempty"`
 	Tokens         []Token         `gorm:"foreignKey:UserID" json:"tokens,omitempty"`

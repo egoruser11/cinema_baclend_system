@@ -68,6 +68,7 @@ func SetupUserOrderRoutes(e *echo.Echo, userOrderHandler *handlers.UserOrderHand
 	{
 		premiereGroup.POST("create", userOrderHandler.Create)
 		premiereGroup.POST("paid", userOrderHandler.Paid)
+		premiereGroup.POST("refund", userOrderHandler.Refund)
 		//premiereGroup.PATCH("update", userPaymentMethodHandler.Update)
 		//premiereGroup.DELETE("delete", userPaymentMethodHandler.Delete)
 		//premiereGroup.GET("", userPaymentMethodHandler.Index)

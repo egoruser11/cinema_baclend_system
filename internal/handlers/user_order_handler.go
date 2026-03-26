@@ -38,3 +38,15 @@ func (handler *UserOrderHandler) Paid(c echo.Context) error {
 	}
 	return utils.OK(c, order)
 }
+
+func (handler *UserOrderHandler) Refund(c echo.Context) error {
+	var req requests.OrderRefundedRequest
+	if err := c.Bind(&req); err != nil {
+		return utils.BadRequest(c, err.Error())
+	}
+	order, err := handler.userOrderService.Refund(c, req)
+	if err != nil {
+		return utils.InternalServerError(c, err.Error())
+	}
+	return utils.OK(c, order)
+}

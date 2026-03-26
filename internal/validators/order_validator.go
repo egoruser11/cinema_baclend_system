@@ -78,7 +78,7 @@ func ValidatePaidOrder(c echo.Context, db *gorm.DB, req requests.OrderPaidReques
 		return errors, false
 	}
 	if req.Coins != nil {
-		var coins uint64
+		var coins float64
 		db.Model(&models.User{}).Where("id = ?", user.ID).Pluck("coins", &coins)
 		if coins < *req.Coins {
 			errors["coins"] = fmt.Sprintf("Coins %d < %d KINGSLAYEEER", coins, *req.Coins)
@@ -105,7 +105,7 @@ func ValidateOrderRefund(c echo.Context, db *gorm.DB, request requests.OrderRefu
 	var order models.Order
 	user := c.Get("user_data").(*models.User)
 	errors := make(map[string]string)
-	err := db.Model(&models.Order{}).Where("id = ?", request.ID).Find(&order).Error
+	err := db.Preload("Premiere").Model(&models.Order{}).Where("id = ?", request.ID).Find(&order).Error
 	if err != nil {
 		errors["order"] = "Order not found"
 		return errors, false
