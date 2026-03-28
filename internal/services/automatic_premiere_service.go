@@ -2,14 +2,14 @@ package services
 
 import (
 	"cinema_backend_system/internal/models"
+	"cinema_backend_system/internal/utils"
 	"encoding/json"
 	"gorm.io/gorm"
 	"sort"
-	"strconv"
-	"strings"
 )
 
-func ReserveSeats(db *gorm.DB, bookedCount int, premiere models.Premiere, seats map[uint][]uint) error {
+func ReserveSeats(db *gorm.DB, bookedCount int, premiere models.Premiere, oldPremiere *models.Premiere, seats map[uint][]uint, isUpdate bool,
+	oldOrderBookedCount *int) error {
 	var existingSeats map[int][]int
 	json.Unmarshal(premiere.BookedSeats, &existingSeats)
 
@@ -36,11 +36,25 @@ func ReserveSeats(db *gorm.DB, bookedCount int, premiere models.Premiere, seats 
 	for row := range existingSeats {
 		sort.Ints(existingSeats[row])
 	}
+	resBookedCount := 0
+	if isUpdate {
+		diff := bookedCount - *oldOrderBookedCount
+		resBookedCount = diff + oldPremiere.BookedCount
+		data, _ := json.Marshal(existingSeats)
+		return db.Model(&premiere).Updates(map[string]interface{}{
+			"booked_seats": data,
+			"booked_count": resBookedCount,
+		}).Error
+	}
+	if premiere.BookedCount == 0 {
+		resBookedCount += bookedCount
+	}
+	resBookedCount = bookedCount + premiere.BookedCount
 
 	data, _ := json.Marshal(existingSeats)
 	return db.Model(&premiere).Updates(map[string]interface{}{
 		"booked_seats": data,
-		"booked_count": bookedCount,
+		"booked_count": resBookedCount,
 	}).Error
 }
 
@@ -57,11 +71,11 @@ func UnReserveSeats(db *gorm.DB, premiere *models.Premiere, order *models.Order,
 	return err
 }
 
-func findInRowsCopiesSeats(seatsInRowBooked []int, seatsInRowInOrder []int) []int {
+func findInRowsCopiesSeats(seatsInRowBooked []int, seatsInRowInOrder []uint) []int {
 	result := []int{}
 	for i := 0; i < len(seatsInRowBooked); i++ {
 		for j := 0; j < len(seatsInRowInOrder); j++ {
-			if seatsInRowBooked[i] == seatsInRowInOrder[j] {
+			if seatsInRowBooked[i] == int(seatsInRowInOrder[j]) {
 				result = append(result, seatsInRowBooked[i])
 			}
 		}
@@ -70,26 +84,16 @@ func findInRowsCopiesSeats(seatsInRowBooked []int, seatsInRowInOrder []int) []in
 }
 
 func UnReserveForOneOrder(db *gorm.DB, order models.Order, premiere models.Premiere, status models.OrderStatus) error {
-	seats := strings.TrimSuffix(order.Seats, ",")
-	mapInOrderSeats := make(map[int][]int)
+	mapInOrderSeats := utils.ParseSeats(order.Seats)
 	newPremiereBookedSeats := make(map[int][]int)
 
-	seatsArr := strings.Split(seats, ",")
-	for _, seat := range seatsArr {
-		parts := strings.Split(seat, " - ")
-
-		row, _ := strconv.Atoi(strings.TrimSpace(parts[0]))
-		seatNum, _ := strconv.Atoi(strings.TrimSpace(parts[1]))
-
-		mapInOrderSeats[row] = append(mapInOrderSeats[row], seatNum)
-	}
 	var bookedSeats map[int][]int
 	bookedCountNew := premiere.BookedCount
 	json.Unmarshal(premiere.BookedSeats, &bookedSeats)
 	for rowBooked, seatsInRowBooked := range bookedSeats {
 		arrCopiesSeats := []int{}
 		for rowInOrder, seatsInRowInOrder := range mapInOrderSeats {
-			if rowInOrder == rowBooked {
+			if int(rowInOrder) == rowBooked {
 				arrCopiesSeats = findInRowsCopiesSeats(seatsInRowBooked, seatsInRowInOrder)
 			}
 		}

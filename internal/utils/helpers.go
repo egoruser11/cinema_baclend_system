@@ -3,6 +3,7 @@ package utils
 import (
 	"golang.org/x/crypto/bcrypt"
 	"math/rand"
+	"strconv"
 	"strings"
 )
 
@@ -35,4 +36,47 @@ func InputErrorsValid(errorsValid map[string]string) string {
 		errorsRes = append(errorsRes, field+" :"+err)
 	}
 	return strings.Join(errorsRes, "\n")
+}
+
+func ParseSeats(seatsStr string) map[uint][]uint {
+	result := make(map[uint][]uint)
+	seatsStr = strings.TrimSuffix(seatsStr, ",")
+	if seatsStr == "" {
+		return result
+	}
+	seatsArr := strings.Split(seatsStr, ",")
+
+	for _, seat := range seatsArr {
+		parts := strings.Split(strings.TrimSpace(seat), " - ")
+		if len(parts) != 2 {
+			continue
+		}
+
+		row, err := strconv.ParseUint(parts[0], 10, 0)
+		if err != nil {
+			continue
+		}
+
+		num, err := strconv.ParseUint(parts[1], 10, 0)
+		if err != nil {
+			continue
+		}
+
+		rowUint := uint(row)
+		numUint := uint(num)
+
+		exists := false
+		for _, existing := range result[rowUint] {
+			if existing == numUint {
+				exists = true
+				break
+			}
+		}
+
+		if !exists {
+			result[rowUint] = append(result[rowUint], numUint)
+		}
+	}
+
+	return result
 }

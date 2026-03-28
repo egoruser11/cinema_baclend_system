@@ -9,8 +9,6 @@ import (
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
-	"strconv"
-	"strings"
 	"time"
 )
 
@@ -55,7 +53,7 @@ func (service *UserOrderService) Create(c echo.Context, req requests.OrderCreate
 	if err := service.db.Preload("Premiere.Movie").First(order, order.ID).Error; err != nil {
 		return nil, err
 	}
-	err := ReserveSeats(service.db, countSeatsInOrder, premiere, seatsInOrder)
+	err := ReserveSeats(service.db, countSeatsInOrder, premiere, nil, seatsInOrder, false, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +81,7 @@ func (service *UserOrderService) Paid(c echo.Context, req requests.OrderPaidRequ
 	user := c.Get("user_data").(*models.User)
 	if order.Status != models.OrderPending {
 		countSeatsInOrder, seatsInOrder := getInfoFromOrder(*order)
-		err := ReserveSeats(service.db, countSeatsInOrder, order.Premiere, seatsInOrder)
+		err := ReserveSeats(service.db, countSeatsInOrder, order.Premiere, nil, seatsInOrder, false, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -186,55 +184,162 @@ func (service *UserOrderService) Refund(c echo.Context, req requests.OrderRefund
 	return &order, nil
 }
 
+// Update обновляет места в заказе (только для неоплаченных заказов)
+func (service *UserOrderService) Update(c echo.Context, req requests.OrderUpdateRequest) (*models.Order, error) {
+	errorsValid, ok, newBookedSeats := validators.ValidateOrderUpdate(c, service.db, req)
+	if !ok {
+		if _, isExpired := errorsValid["orderExpired"]; isExpired {
+			var order models.Order
+			if err := service.db.Preload("Premiere").Where("id = ?", req.ID).First(&order).Error; err != nil {
+				return nil, errors.New("order not found")
+			}
+			if err := UnReserveSeats(service.db, &order.Premiere, &order, nil, models.OrderDeleted); err != nil {
+				return nil, err
+			}
+			return nil, errors.New("order expired, please create a new one")
+		}
+		return nil, errors.New(utils.InputErrorsValid(errorsValid))
+	}
+
+	user := c.Get("user_data").(*models.User)
+
+	var order models.Order
+	if err := service.db.Preload("Premiere.Movie").Where("id = ?", *req.ID).First(&order).Error; err != nil {
+		return nil, errors.New("order not found")
+	}
+	currentSeats := utils.ParseSeats(order.Seats)
+	countSeatsOldOrder := 0
+	for _, row := range currentSeats {
+		countSeatsOldOrder += len(row)
+	}
+
+	if order.UserID != user.ID {
+		return nil, errors.New("access denied: order does not belong to this user")
+	}
+
+	if req.Seats == nil {
+		return &order, nil
+	}
+
+	seatsStr := ""
+	countSeats := 0
+	for row, seatsRow := range req.Seats {
+		for _, seat := range seatsRow {
+			seatsStr += fmt.Sprintf("%d - %d,", row, seat)
+			countSeats++
+		}
+	}
+
+	newTotalAmount := float64(order.Premiere.Price) * float64(countSeats)
+
+	err := service.db.Transaction(func(tx *gorm.DB) error {
+		if err := UnReserveForOneOrder(tx, order, order.Premiere, models.OrderPending); err != nil {
+			return err
+		}
+
+		var rewritePremiere models.Premiere
+		if err := tx.Model(&models.Premiere{}).Where("id = ?", order.Premiere.ID).First(&rewritePremiere).Error; err != nil {
+			return err
+		}
+		if err := ReserveSeats(tx, countSeats, rewritePremiere, &order.Premiere, newBookedSeats, true, &countSeatsOldOrder); err != nil {
+			return err
+		}
+
+		updates := map[string]interface{}{
+			"seats":        seatsStr,
+			"total_amount": newTotalAmount,
+		}
+		if err := tx.Model(&order).Updates(updates).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err = service.db.Preload("Premiere.Movie").First(&order, order.ID).Error; err != nil {
+		return nil, err
+	}
+
+	return &order, nil
+}
+
+func (service *UserOrderService) Index(c echo.Context, req requests.OrderIndexRequest) ([]*models.Order, error) {
+	errorsValid, filters, ok := validators.ValidateOrderIndex(c, service.db, req)
+	if !ok {
+		return nil, errors.New(utils.InputErrorsValid(errorsValid))
+	}
+
+	var orders []*models.Order
+
+	query := service.db.Model(&models.Order{}).Preload("Premiere.Movie")
+
+	if userID, exists := filters["user_id"]; exists {
+		query = query.Where("user_id = ?", userID)
+	}
+	if status, exists := filters["status"]; exists {
+		query = query.Where("status = ?", status)
+	}
+	if premiereID, exists := filters["premiere_id"]; exists {
+		query = query.Where("premiere_id = ?", premiereID)
+	}
+	if dateFrom, exists := filters["date_from"]; exists {
+		query = query.Where("created_at >= ?", dateFrom)
+	}
+	if dateTo, exists := filters["date_to"]; exists {
+		query = query.Where("created_at <= ?", dateTo)
+	}
+
+	if limit, exists := filters["limit"]; exists {
+		query = query.Limit(limit.(int))
+	}
+	if offset, exists := filters["offset"]; exists {
+		query = query.Offset(offset.(int))
+	}
+
+	if sort, exists := filters["sort"]; exists {
+		order := filters["order"].(string)
+		query = query.Order(fmt.Sprintf("%s %s", sort, order))
+	} else {
+		query = query.Order("created_at DESC")
+	}
+
+	if err := query.Find(&orders).Error; err != nil {
+		return nil, err
+	}
+
+	return orders, nil
+}
+
+func (service *UserOrderService) Show(c echo.Context, req requests.OrderShowRequest) (*models.Order, error) {
+	errorsValid, order := validators.ValidateOrderShow(c, service.db, req)
+	if len(errorsValid) > 0 {
+		return nil, errors.New(utils.InputErrorsValid(errorsValid))
+	}
+	return order, nil
+}
+
+func (service *UserOrderService) Delete(c echo.Context, req requests.OrderDeleteRequest) error {
+	errorsValid, order, ok := validators.ValidateOrderDelete(c, service.db, req)
+	if !ok {
+		return errors.New(utils.InputErrorsValid(errorsValid))
+	}
+
+	if err := UnReserveSeats(service.db, &order.Premiere, order, nil, models.OrderDeleted); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func getInfoFromOrder(order models.Order) (int, map[uint][]uint) {
-	seatsInOrder := parseSeats(order.Seats)
+	seatsInOrder := utils.ParseSeats(order.Seats)
 	var countSeatsInOrder int
 	for _, seats := range seatsInOrder {
 		countSeatsInOrder += len(seats)
 	}
 	return countSeatsInOrder, seatsInOrder
-}
-
-// index , show , delete , update , refund
-func parseSeats(seatsStr string) map[uint][]uint {
-	result := make(map[uint][]uint)
-	seatsStr = strings.TrimSuffix(seatsStr, ",")
-	if seatsStr == "" {
-		return result
-	}
-	seatsArr := strings.Split(seatsStr, ",")
-
-	for _, seat := range seatsArr {
-		parts := strings.Split(strings.TrimSpace(seat), " - ")
-		if len(parts) != 2 {
-			continue
-		}
-
-		row, err := strconv.ParseUint(parts[0], 10, 0)
-		if err != nil {
-			continue
-		}
-
-		num, err := strconv.ParseUint(parts[1], 10, 0)
-		if err != nil {
-			continue
-		}
-
-		rowUint := uint(row)
-		numUint := uint(num)
-
-		exists := false
-		for _, existing := range result[rowUint] {
-			if existing == numUint {
-				exists = true
-				break
-			}
-		}
-
-		if !exists {
-			result[rowUint] = append(result[rowUint], numUint)
-		}
-	}
-
-	return result
 }
