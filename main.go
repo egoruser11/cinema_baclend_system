@@ -24,7 +24,6 @@ func main() {
 		logger.Error("Ошибка подключения к БД", "error", err)
 		os.Exit(1)
 	}
-
 	if err := models.SetupDatabase(db); err != nil {
 		logger.Error("Ошибка настройки БД", "error", err)
 		os.Exit(1)
@@ -38,6 +37,7 @@ func main() {
 	userPaymentMethodService := services.NewUserPaymentMethodService(db)
 	userOrderService := services.NewUserOrderService(db)
 	userReviewService := services.NewUserReviewService(db)
+	adminReviewService := services.NewAdminReviewService(db)
 
 	authHandler := handlers.NewAuthHandler(authService)
 	userHandler := handlers.NewUserHandler(userService)
@@ -46,6 +46,7 @@ func main() {
 	userPaymentMethodHandler := handlers.NewUserPaymentMethodHandler(userPaymentMethodService)
 	userOrderHandler := handlers.NewUserOrderHandler(userOrderService)
 	userReviewHandler := handlers.NewUserReviewHandler(userReviewService)
+	adminReviewHandler := handlers.NewAdminReviewHandler(adminReviewService)
 	e := echo.New()
 
 	e.Use(middleware.Logger())
@@ -65,7 +66,7 @@ func main() {
 	routes.SetupUserPaymentMethodRoutes(e, userPaymentMethodHandler, db)
 	routes.SetupUserOrderRoutes(e, userOrderHandler, db)
 	routes.SetupUserReviewRoutes(e, userReviewHandler, db)
-
+	routes.SetupAdminReviewRoutes(e, adminReviewHandler, db)
 	port := "localhost:8080"
 	logger.Info("Запуск сервера", "port", port)
 	if err := e.Start(port); err != nil {

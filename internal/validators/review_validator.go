@@ -48,7 +48,7 @@ func ValidateCreateReview(c echo.Context, db *gorm.DB, req requests.ReviewCreate
 	return errors, len(errors) == 0
 }
 
-func ValidateApproveReview(c echo.Context, db *gorm.DB, req requests.ReviewApproveRequest) (map[string]string, bool) {
+func ValidateApproveReview(db *gorm.DB, req requests.ReviewApproveRequest) (map[string]string, bool) {
 	errors := make(map[string]string)
 	err := db.Model(&models.Review{}).Where("id = ?", req.ReviewID).Error
 	if err != nil {
@@ -58,7 +58,7 @@ func ValidateApproveReview(c echo.Context, db *gorm.DB, req requests.ReviewAppro
 	if req.ReasonReject != nil {
 		if *req.ReasonReject != "" {
 			if req.Status != models.ReviewStatusApproved {
-				errors["reject"] = "status and reason cannot be together , please correct data"
+				errors["reject"] = "status approve and reason cannot be together , please correct data"
 				return errors, false
 			}
 		}

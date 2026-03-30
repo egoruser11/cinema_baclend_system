@@ -28,22 +28,6 @@ func (service *UserReviewService) Create(c echo.Context, req requests.ReviewCrea
 	if err != nil {
 		return nil, err
 	}
-	var movieReviewsRatings []float64
-	err = service.db.Model(&models.Review{}).Where("movie_id = ?", req.MovieID).Pluck("rating", &movieReviewsRatings).Error
-	if err != nil {
-		return nil, err
-	}
-	sumOfRatings := utils.GetSLiceSum(movieReviewsRatings) + float64(req.Rating)
-	newMovieRatingCount := movie.RatingCount + 1
-	newMovieRating := sumOfRatings / float64(newMovieRatingCount)
-	movieUpdateData := map[string]interface{}{
-		"rating_count": newMovieRatingCount,
-		"rating":       newMovieRating,
-	}
-	err = service.db.Model(&movie).Updates(movieUpdateData).Error
-	if err != nil {
-		return nil, err
-	}
 	review := &models.Review{
 		MovieID:   movie.ID,
 		UserID:    c.Get("user_data").(*models.User).ID,

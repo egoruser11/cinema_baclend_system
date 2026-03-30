@@ -117,7 +117,8 @@ func (service *AdminMovieService) Index(req requests.MovieIndexRequest) ([]*mode
 	}
 	fmt.Println(filters)
 	var movies []*models.Movie
-	query := service.db.Model(&models.Movie{}).Preload("Genres", "Reviews")
+	query := service.db.Model(&models.Movie{}).Preload("Genres").Preload("Reviews", "status = ?",
+		models.ReviewStatusApproved)
 	if len(filters) > 0 {
 		sort, existsSort := filters["sort"]
 		if existsSort {
