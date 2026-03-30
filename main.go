@@ -37,6 +37,7 @@ func main() {
 	adminPremiereService := services.NewAdminPremiereService(db)
 	userPaymentMethodService := services.NewUserPaymentMethodService(db)
 	userOrderService := services.NewUserOrderService(db)
+	userReviewService := services.NewUserReviewService(db)
 
 	authHandler := handlers.NewAuthHandler(authService)
 	userHandler := handlers.NewUserHandler(userService)
@@ -44,6 +45,7 @@ func main() {
 	adminPremiereHandler := handlers.NewAdminPremiereHandler(adminPremiereService)
 	userPaymentMethodHandler := handlers.NewUserPaymentMethodHandler(userPaymentMethodService)
 	userOrderHandler := handlers.NewUserOrderHandler(userOrderService)
+	userReviewHandler := handlers.NewUserReviewHandler(userReviewService)
 	e := echo.New()
 
 	e.Use(middleware.Logger())
@@ -62,6 +64,7 @@ func main() {
 	routes.SetupAdminPremiereRoutes(e, adminPremiereHandler, db)
 	routes.SetupUserPaymentMethodRoutes(e, userPaymentMethodHandler, db)
 	routes.SetupUserOrderRoutes(e, userOrderHandler, db)
+	routes.SetupUserReviewRoutes(e, userReviewHandler, db)
 
 	port := "localhost:8080"
 	logger.Info("Запуск сервера", "port", port)

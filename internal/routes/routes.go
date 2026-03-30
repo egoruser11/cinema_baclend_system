@@ -75,3 +75,17 @@ func SetupUserOrderRoutes(e *echo.Echo, userOrderHandler *handlers.UserOrderHand
 		premiereGroup.GET("show", userOrderHandler.Show)
 	}
 }
+
+func SetupUserReviewRoutes(e *echo.Echo, userOrderHandler *handlers.UserReviewHandler, db *gorm.DB) {
+	premiereGroup := e.Group("/api/v1/review/")
+	premiereGroup.Use(middleware.AuthMiddleware(db))
+	{
+		premiereGroup.POST("create", userOrderHandler.Create)
+		//premiereGroup.POST("paid", userOrderHandler.Paid)
+		//premiereGroup.POST("refund", userOrderHandler.Refund)
+		//premiereGroup.PATCH("update", userOrderHandler.Update)
+		//premiereGroup.DELETE("delete", userOrderHandler.Delete)
+		//premiereGroup.GET("", userOrderHandler.Index)
+		//premiereGroup.GET("show", userOrderHandler.Show)
+	}
+}
