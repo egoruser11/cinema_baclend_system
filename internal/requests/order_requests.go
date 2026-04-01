@@ -33,7 +33,7 @@ type OrderShowRequest struct {
 }
 
 type OrderDeleteRequest struct {
-	ID *uint `json:"id"`
+	ID *uint `query:"id"`
 }
 
 type OrderUpdateRequest struct {

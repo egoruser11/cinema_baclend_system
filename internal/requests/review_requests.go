@@ -10,5 +10,13 @@ type ReviewCreateRequest struct {
 type ReviewApproveRequest struct {
 	ReviewID     uint                `json:"review_id" binding:"required"`
 	Status       models.ReviewStatus `json:"status" binding:"required"`
-	ReasonReject *string             `json:"reason" binding:"required,min=1,max=20"`
+	ReasonReject *string             `json:"reason"`
+}
+type ReviewUpdateRequest struct {
+	ReviewID uint    `json:"review_id" binding:"required"`
+	Rating   *int    `json:"rating" binding:"omitempty,min=1,max=10"`
+	Comment  *string `json:"comment"`
+}
+type ReviewDeleteRequest struct {
+	ReviewID uint `json:"review_id" binding:"required"`
 }

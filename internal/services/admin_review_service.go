@@ -34,7 +34,7 @@ func (service *AdminReviewService) Approve(req requests.ReviewApproveRequest) (*
 		if err != nil {
 			return nil, err
 		}
-		err := RecalculateRatingMovie(service.db, review.Movie, review.Rating, movieReviewsRatings)
+		err := RecalculateRatingMovie(service.db, review.Movie, review.Rating, movieReviewsRatings, false)
 		if err != nil {
 			return nil, err
 		}

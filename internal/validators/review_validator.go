@@ -66,3 +66,41 @@ func ValidateApproveReview(db *gorm.DB, req requests.ReviewApproveRequest) (map[
 	}
 	return errors, len(errors) == 0
 }
+
+func ValidateUpdateReview(c echo.Context, db *gorm.DB, req requests.ReviewUpdateRequest) (map[string]string, map[string]interface{}, bool) {
+	errors := make(map[string]string)
+	updates := map[string]interface{}{}
+	user := c.Get("user_data").(*models.User)
+	var review models.Review
+	err := db.Model(&models.Review{}).Where("id = ?", req.ReviewID).First(&review).Error
+	if err != nil {
+		errors["review"] = err.Error()
+		return errors, updates, false
+	}
+	if review.UserID != user.ID {
+		errors["review"] = "it is not your review!"
+		return errors, updates, false
+	}
+	if req.Rating == nil && req.Comment == nil {
+		errors["data"] = "input normal data , please"
+		return errors, updates, false
+	}
+	if req.Comment != nil {
+		if *req.Comment != "" {
+			if !utils.ValidateCommentInReview(*req.Comment) {
+				errors["comment"] = "comment is invalid"
+				return errors, updates, false
+			}
+			updates["comment"] = *req.Comment
+		} else {
+			errors["comment"] = "input normal comment , please"
+		}
+	}
+	if req.Rating != nil {
+		if *req.Rating == review.Rating && req.Comment == nil {
+			updates["data"] = "input normal data , please "
+		}
+		updates["rating"] = *req.Rating
+	}
+	return errors, updates, len(errors) == 0
+}

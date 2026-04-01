@@ -28,6 +28,7 @@ func main() {
 		logger.Error("Ошибка настройки БД", "error", err)
 		os.Exit(1)
 	}
+
 	logger.Info("База данных настроена")
 
 	authService := services.NewAuthService(db)

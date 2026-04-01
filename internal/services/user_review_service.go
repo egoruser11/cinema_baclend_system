@@ -43,3 +43,31 @@ func (service *UserReviewService) Create(c echo.Context, req requests.ReviewCrea
 
 	return review, nil
 }
+
+func (service *UserReviewService) Update(c echo.Context, req requests.ReviewUpdateRequest) (*models.Review, error) {
+	errorsValid, updates, ok := validators.ValidateUpdateReview(c, service.db, req)
+	if !ok {
+		return nil, errors.New(utils.InputErrorsValid(errorsValid))
+	}
+	var review models.Review
+	err := service.db.Preload("Movie").Model(&models.Review{}).Where("id = ?", req.ReviewID).First(&review).Error
+	if err != nil {
+		return nil, err
+	}
+	if review.Status == models.ReviewStatusApproved {
+		var movieReviewsRatings []float64
+		err = service.db.Model(&models.Review{}).Where("movie_id = ? AND status = ?", review.MovieID,
+			models.ReviewStatusApproved).Pluck("rating", &movieReviewsRatings).Error
+		err = RecalculateRatingMovie(service.db, review.Movie, review.Rating, movieReviewsRatings, true)
+		if err != nil {
+			return nil, err
+		}
+		updates["status"] = models.ReviewStatusUnderConsideration
+
+	}
+	err = service.db.Model(&review).Updates(updates).Error
+	if err != nil {
+		return nil, err
+	}
+	return &review, nil
+}

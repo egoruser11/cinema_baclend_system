@@ -81,8 +81,7 @@ func SetupUserReviewRoutes(e *echo.Echo, userReviewHandler *handlers.UserReviewH
 	premiereGroup.Use(middleware.AuthMiddleware(db))
 	{
 		premiereGroup.POST("create", userReviewHandler.Create)
-		//premiereGroup.POST("paid", userOrderHandler.Paid)
-		//premiereGroup.PATCH("update", userOrderHandler.Update)
+		premiereGroup.PATCH("update", userReviewHandler.Update)
 		//premiereGroup.DELETE("delete", userOrderHandler.Delete)
 		//premiereGroup.GET("", userOrderHandler.Index)
 		//premiereGroup.GET("show", userOrderHandler.Show)
