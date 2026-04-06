@@ -50,3 +50,18 @@ func (handler *UserReviewHandler) Update(c echo.Context) error {
 	}
 	return utils.OK(c, review)
 }
+
+func (handler *UserReviewHandler) Delete(c echo.Context) error {
+	var request requests.ReviewDeleteRequest
+	if err := c.Bind(&request); err != nil {
+		return utils.BadRequest(c, "Invalid request body")
+	}
+	if err := validator.New().Struct(request); err != nil {
+		return utils.BadRequest(c, err.Error())
+	}
+	err := handler.userReviewService.Delete(c, request)
+	if err != nil {
+		return utils.BadRequest(c, err.Error())
+	}
+	return utils.OK(c, "delete success")
+}

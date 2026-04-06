@@ -104,3 +104,19 @@ func ValidateUpdateReview(c echo.Context, db *gorm.DB, req requests.ReviewUpdate
 	}
 	return errors, updates, len(errors) == 0
 }
+
+func ValidateDeleteReview(c echo.Context, db *gorm.DB, req requests.ReviewDeleteRequest) (map[string]string, bool) {
+	errors := make(map[string]string)
+	user := c.Get("user_data").(*models.User)
+	var review models.Review
+	err := db.Model(&review).Where("id = ?", req.ReviewID).First(&review).Error
+	if err != nil {
+		errors["review"] = err.Error()
+		return errors, false
+	}
+	if review.UserID != user.ID {
+		errors["review"] = "it is not your review!"
+		return errors, false
+	}
+	return errors, len(errors) == 0
+}

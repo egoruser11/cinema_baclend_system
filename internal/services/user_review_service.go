@@ -58,6 +58,9 @@ func (service *UserReviewService) Update(c echo.Context, req requests.ReviewUpda
 		var movieReviewsRatings []float64
 		err = service.db.Model(&models.Review{}).Where("movie_id = ? AND status = ?", review.MovieID,
 			models.ReviewStatusApproved).Pluck("rating", &movieReviewsRatings).Error
+		if err != nil {
+			return nil, err
+		}
 		err = RecalculateRatingMovie(service.db, review.Movie, review.Rating, movieReviewsRatings, true)
 		if err != nil {
 			return nil, err
@@ -70,4 +73,31 @@ func (service *UserReviewService) Update(c echo.Context, req requests.ReviewUpda
 		return nil, err
 	}
 	return &review, nil
+}
+
+func (service *UserReviewService) Delete(c echo.Context, req requests.ReviewDeleteRequest) error {
+	errorsValid, ok := validators.ValidateDeleteReview(c, service.db, req)
+	if !ok {
+		return errors.New(utils.InputErrorsValid(errorsValid))
+	}
+	var review models.Review
+	err := service.db.Preload("Movie").Model(&review).Where("id = ?", req.ReviewID).First(&review).Error
+	if err != nil {
+		return err
+	}
+	var movieReviewsRatings []float64
+	err = service.db.Model(&models.Review{}).Where("movie_id = ? AND status = ?", review.MovieID,
+		models.ReviewStatusApproved).Pluck("rating", &movieReviewsRatings).Error
+	if err != nil {
+		return nil
+	}
+	err = RecalculateRatingMovie(service.db, review.Movie, review.Rating, movieReviewsRatings, true)
+	if err != nil {
+		return err
+	}
+	err = service.db.Delete(&review).Error
+	if err != nil {
+		return err
+	}
+	return nil
 }
