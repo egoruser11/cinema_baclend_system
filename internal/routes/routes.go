@@ -8,10 +8,11 @@ import (
 )
 
 func SetupUserRoutes(e *echo.Echo, userHandler *handlers.UserHandler, db *gorm.DB) {
-	protected := e.Group("/api/v1/")
+	protected := e.Group("/api/v1/users/")
 	protected.Use(middleware.AuthMiddleware(db))
 	{
 		protected.GET("profile", userHandler.Profile)
+		protected.PATCH("update", userHandler.Profile)
 	}
 }
 

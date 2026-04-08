@@ -36,9 +36,8 @@ func setupEchoContext(user *models.User) echo.Context {
 	return c
 }
 
-// Вспомогательная функция для создания указателя на uint64
-func uint64Ptr(v uint64) *uint64 {
-	return &v
+func float64Ptr(value float64) *float64 {
+	return &value
 }
 
 func TestValidatePaidOrder(t *testing.T) {
@@ -104,7 +103,7 @@ func TestValidatePaidOrder(t *testing.T) {
 			},
 			req: requests.OrderPaidRequest{
 				OrderID: 1,
-				Coins:   uint64Ptr(100),
+				Coins:   float64Ptr(100.0),
 			},
 			expectedErrors: map[string]string{},
 			expectedOk:     true,
@@ -214,7 +213,7 @@ func TestValidatePaidOrder(t *testing.T) {
 			},
 			req: requests.OrderPaidRequest{
 				OrderID: 1,
-				Coins:   uint64Ptr(100),
+				Coins:   float64Ptr(100.0),
 			},
 			expectedErrors: map[string]string{
 				"coins": "Coins 50 < 100 KINGSLAYEEER",
@@ -248,7 +247,7 @@ func TestValidatePaidOrder(t *testing.T) {
 			},
 			req: requests.OrderPaidRequest{
 				OrderID: 1,
-				Coins:   uint64Ptr(600),
+				Coins:   float64Ptr(100.0),
 			},
 			expectedErrors: map[string]string{
 				"coins": "Ypu input more then total amount of this order",
@@ -282,7 +281,7 @@ func TestValidatePaidOrder(t *testing.T) {
 			},
 			req: requests.OrderPaidRequest{
 				OrderID: 1,
-				Coins:   uint64Ptr(50),
+				Coins:   float64Ptr(100.0),
 			},
 			expectedErrors: map[string]string{
 				"money": "Money is not enough",

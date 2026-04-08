@@ -1,7 +1,9 @@
 package validators
 
 import (
+	"cinema_backend_system/internal/models"
 	"cinema_backend_system/internal/requests"
+	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
 	"regexp"
 	"strings"
@@ -64,4 +66,33 @@ func ValidateRegister(db *gorm.DB, req requests.RegisterRequest) (map[string]str
 func isValidEmail(email string) bool {
 	emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
 	return emailRegex.MatchString(strings.ToLower(email))
+}
+
+func ValidateUpdateUser(c echo.Context, req requests.UpdateUserRequest) (map[string]string, map[string]interface{}, bool) {
+	errors := make(map[string]string)
+	updates := make(map[string]interface{})
+	user := c.Get("user_data").(*models.User)
+	updates["id"] = user.ID
+	if req.Username != nil {
+		if *req.Username == "" {
+			errors["username"] = "Please input correct name"
+		} else {
+			updates["username"] = *req.Username
+		}
+	}
+	if req.Email != nil {
+		if *req.Email == "" || !isValidEmail(*req.Email) {
+			errors["email"] = "Please input correct email"
+		} else {
+			updates["email"] = *req.Email
+		}
+	}
+	if req.Age != nil {
+		if *req.Age < 10 {
+			errors["age"] = "Age must be at least 10 years"
+		} else {
+			updates["age"] = *req.Age
+		}
+	}
+	return errors, updates, len(errors) == 0
 }
