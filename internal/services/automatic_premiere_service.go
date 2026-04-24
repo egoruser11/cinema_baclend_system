@@ -120,15 +120,21 @@ func UnReserveForOneOrder(db *gorm.DB, order models.Order, premiere models.Premi
 	if err != nil {
 		return err
 	}
-	db.Model(&premiere).Updates(map[string]interface{}{
+	if err := db.Model(&premiere).Updates(map[string]interface{}{
 		"booked_seats": newBookedSeatsJson,
 		"booked_count": bookedCountNew,
-	})
+	}).Error; err != nil {
+		return err
+	}
 	switch status {
 	case models.OrderDeleted:
-		db.Delete(&order)
+		if err := db.Delete(&order).Error; err != nil {
+			return err
+		}
 	default:
-		db.Model(&order).Update("status", status)
+		if err := db.Model(&order).Update("status", status).Error; err != nil {
+			return err
+		}
 	}
 	return nil
 }

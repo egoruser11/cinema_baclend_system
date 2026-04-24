@@ -49,7 +49,7 @@ func (handler *AdminMovieHandler) Delete(c echo.Context) error {
 	if err != nil {
 		return utils.InternalServerError(c, err.Error())
 	}
-	return utils.OK(c, fmt.Sprintf("Movie %s deleted", req.Id))
+	return utils.OK(c, fmt.Sprintf("Movie %d deleted", req.Id))
 }
 
 func (handler *AdminMovieHandler) Show(c echo.Context) error {

@@ -50,25 +50,46 @@ func (service *UserReviewService) Update(c echo.Context, req requests.ReviewUpda
 		return nil, errors.New(utils.InputErrorsValid(errorsValid))
 	}
 	var review models.Review
-	err := service.db.Preload("Movie").Model(&models.Review{}).Where("id = ?", req.ReviewID).First(&review).Error
-	if err != nil {
-		return nil, err
-	}
-	if review.Status == models.ReviewStatusApproved {
-		var movieReviewsRatings []float64
-		err = service.db.Model(&models.Review{}).Where("movie_id = ? AND status = ?", review.MovieID,
-			models.ReviewStatusApproved).Pluck("rating", &movieReviewsRatings).Error
+	err := service.db.Transaction(func(tx *gorm.DB) error {
+		lockedReview, err := lockReviewForUpdate(tx, req.ReviewID)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		err = RecalculateRatingMovie(service.db, review.Movie, review.Rating, movieReviewsRatings, true)
-		if err != nil {
-			return nil, err
-		}
-		updates["status"] = models.ReviewStatusUnderConsideration
 
-	}
-	err = service.db.Model(&review).Updates(updates).Error
+		if lockedReview.Status == models.ReviewStatusApproved {
+			lockedMovie, err := lockMovieForUpdate(tx, lockedReview.MovieID)
+			if err != nil {
+				return err
+			}
+			lockedReview.Movie = *lockedMovie
+
+			var movieReviewsRatings []float64
+			err = tx.Model(&models.Review{}).Where("movie_id = ? AND status = ?", lockedReview.MovieID,
+				models.ReviewStatusApproved).Pluck("rating", &movieReviewsRatings).Error
+			if err != nil {
+				return err
+			}
+			if err := RecalculateRatingMovie(tx, lockedReview.Movie, lockedReview.Rating, movieReviewsRatings, true); err != nil {
+				return err
+			}
+			updates["status"] = models.ReviewStatusUnderConsideration
+		}
+
+		if err := tx.Model(lockedReview).Updates(updates).Error; err != nil {
+			return err
+		}
+		review = *lockedReview
+		if status, exists := updates["status"]; exists {
+			review.Status = status.(models.ReviewStatus)
+		}
+		if rating, exists := updates["rating"]; exists {
+			review.Rating = rating.(int)
+		}
+		if comment, exists := updates["comment"]; exists {
+			review.Comment = comment.(string)
+		}
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -80,24 +101,28 @@ func (service *UserReviewService) Delete(c echo.Context, req requests.ReviewDele
 	if !ok {
 		return errors.New(utils.InputErrorsValid(errorsValid))
 	}
-	var review models.Review
-	err := service.db.Preload("Movie").Model(&review).Where("id = ?", req.ReviewID).First(&review).Error
-	if err != nil {
-		return err
-	}
-	var movieReviewsRatings []float64
-	err = service.db.Model(&models.Review{}).Where("movie_id = ? AND status = ?", review.MovieID,
-		models.ReviewStatusApproved).Pluck("rating", &movieReviewsRatings).Error
-	if err != nil {
-		return nil
-	}
-	err = RecalculateRatingMovie(service.db, review.Movie, review.Rating, movieReviewsRatings, true)
-	if err != nil {
-		return err
-	}
-	err = service.db.Delete(&review).Error
-	if err != nil {
-		return err
-	}
-	return nil
+	return service.db.Transaction(func(tx *gorm.DB) error {
+		lockedReview, err := lockReviewForUpdate(tx, req.ReviewID)
+		if err != nil {
+			return err
+		}
+		if lockedReview.Status == models.ReviewStatusApproved {
+			lockedMovie, err := lockMovieForUpdate(tx, lockedReview.MovieID)
+			if err != nil {
+				return err
+			}
+			lockedReview.Movie = *lockedMovie
+
+			var movieReviewsRatings []float64
+			err = tx.Model(&models.Review{}).Where("movie_id = ? AND status = ?", lockedReview.MovieID,
+				models.ReviewStatusApproved).Pluck("rating", &movieReviewsRatings).Error
+			if err != nil {
+				return err
+			}
+			if err := RecalculateRatingMovie(tx, lockedReview.Movie, lockedReview.Rating, movieReviewsRatings, true); err != nil {
+				return err
+			}
+		}
+		return tx.Delete(lockedReview).Error
+	})
 }

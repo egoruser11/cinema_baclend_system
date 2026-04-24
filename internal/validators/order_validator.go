@@ -83,7 +83,7 @@ func ValidatePaidOrder(c echo.Context, db *gorm.DB, req requests.OrderPaidReques
 		var coins float64
 		db.Model(&models.User{}).Where("id = ?", user.ID).Pluck("coins", &coins)
 		if coins < *req.Coins {
-			errors["coins"] = fmt.Sprintf("Coins %d < %d KINGSLAYEEER", coins, *req.Coins)
+			errors["coins"] = fmt.Sprintf("Coins %.0f < %.0f KINGSLAYEEER", coins, *req.Coins)
 		}
 		if float64(*req.Coins) > order.TotalAmount {
 			errors["coins"] = "Ypu input more then total amount of this order"
