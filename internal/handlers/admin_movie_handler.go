@@ -76,3 +76,11 @@ func (handler *AdminMovieHandler) Index(c echo.Context) error {
 
 	return utils.OK(c, movies)
 }
+
+func (handler *AdminMovieHandler) IndexComingSoon(c echo.Context) error {
+	movies, err := handler.adminMovieService.IndexComingSoon()
+	if err != nil {
+		return utils.InternalServerError(c, err.Error())
+	}
+	return utils.OK(c, movies)
+}

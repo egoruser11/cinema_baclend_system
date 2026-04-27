@@ -35,6 +35,7 @@ func SetupAdminMovieRoutes(e *echo.Echo, adminMovieHandler *handlers.AdminMovieH
 		movieGroup.PATCH("update", adminMovieHandler.Update)
 		movieGroup.DELETE("delete", adminMovieHandler.Delete)
 		movieGroup.GET("", adminMovieHandler.Index)
+		movieGroup.GET("coming-soon", adminMovieHandler.IndexComingSoon)
 		movieGroup.GET("show", adminMovieHandler.Show)
 	}
 }
@@ -63,6 +64,14 @@ func SetupUserPaymentMethodRoutes(e *echo.Echo, userPaymentMethodHandler *handle
 	}
 }
 
+func SetupUserPremiereRoutes(e *echo.Echo, userPremiereHandler *handlers.UserPremiereHandler, db *gorm.DB) {
+	premiereGroup := e.Group("/api/v1/user/premiere/")
+	premiereGroup.Use(middleware.AuthMiddleware(db))
+	{
+		premiereGroup.GET("seat-map", userPremiereHandler.SeatMap)
+	}
+}
+
 func SetupUserOrderRoutes(e *echo.Echo, userOrderHandler *handlers.UserOrderHandler, db *gorm.DB) {
 	premiereGroup := e.Group("/api/v1/order/")
 	premiereGroup.Use(middleware.AuthMiddleware(db))
@@ -73,6 +82,7 @@ func SetupUserOrderRoutes(e *echo.Echo, userOrderHandler *handlers.UserOrderHand
 		premiereGroup.PATCH("update", userOrderHandler.Update)
 		premiereGroup.DELETE("delete", userOrderHandler.Delete)
 		premiereGroup.GET("", userOrderHandler.Index)
+		premiereGroup.GET("summary", userOrderHandler.Summary)
 		premiereGroup.GET("show", userOrderHandler.Show)
 	}
 }

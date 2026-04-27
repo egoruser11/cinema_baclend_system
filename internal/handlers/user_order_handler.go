@@ -99,3 +99,15 @@ func (handler *UserOrderHandler) Show(c echo.Context) error {
 	}
 	return utils.OK(c, order)
 }
+
+func (handler *UserOrderHandler) Summary(c echo.Context) error {
+	var req requests.OrderSummaryRequest
+	if err := c.Bind(&req); err != nil {
+		return utils.BadRequest(c, err.Error())
+	}
+	summary, err := handler.userOrderService.OrderSummary(c, req)
+	if err != nil {
+		return utils.InternalServerError(c, err.Error())
+	}
+	return utils.OK(c, summary)
+}

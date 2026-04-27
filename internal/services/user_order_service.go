@@ -5,6 +5,7 @@ import (
 	"cinema_backend_system/internal/requests"
 	"cinema_backend_system/internal/utils"
 	"cinema_backend_system/internal/validators"
+	"cinema_backend_system/responses"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -486,4 +487,42 @@ func getInfoFromOrder(order models.Order) (int, map[uint][]uint) {
 		countSeatsInOrder += len(seats)
 	}
 	return countSeatsInOrder, seatsInOrder
+}
+
+func (service *UserOrderService) OrderSummary(c echo.Context, req requests.OrderSummaryRequest) (responses.SummaryResponse, error) {
+	var response responses.SummaryResponse
+	var bonusesIncrease float64
+	var bonusesDecrease float64
+	var expiredAt *time.Time
+	errorsValid, ok := validators.ValidateOrderSummary(c, service.db, req)
+	if !ok {
+		return response, errors.New(utils.InputErrorsValid(errorsValid))
+	}
+	var order models.Order
+	err := service.db.Preload("Premiere").Model(&models.Order{}).Where("id = ?", req.ID).First(&order).Error
+	if err != nil {
+		return response, err
+	}
+	seats := utils.ParseSeats(order.Seats)
+	if order.Status == models.OrderPaid {
+		t := order.Premiere.StartTime
+		expiredAt = &t
+	} else if order.Status == models.OrderPending {
+		t := order.CreatedAt.Add(30 * time.Minute)
+		expiredAt = &t
+	}
+	if order.CoinsToPlus != nil {
+		bonusesIncrease = *order.CoinsToPlus
+	}
+	if order.Coins != nil {
+		bonusesDecrease = *order.Coins
+	}
+	response.BonusesIncrease = bonusesIncrease
+	response.BonusesDecrease = bonusesDecrease
+	response.ExpiredAt = expiredAt
+	response.Seats = seats
+	response.PremiereID = order.Premiere.ID
+	response.MovieID = order.Premiere.MovieID
+	response.Status = order.Status
+	return response, nil
 }

@@ -46,3 +46,7 @@ type PremiereIndexRequest struct {
 type PremiereIdRequest struct {
 	Id uint `query:"id"`
 }
+
+type PremiereSeatMapRequest struct {
+	ID uint `query:"id"`
+}

@@ -136,3 +136,15 @@ func (service *AdminMovieService) Index(req requests.MovieIndexRequest) ([]*mode
 	query.Limit(limit).Offset(offset).Find(&movies)
 	return movies, nil
 }
+
+func (service *AdminMovieService) IndexComingSoon() ([]*models.Movie, error) {
+	var movies []*models.Movie
+	sql := `
+	  SELECT * FROM movies WHERE release_date > now()
+	`
+	err := service.db.Raw(sql).Scan(&movies).Error
+	if err != nil {
+		return movies, err
+	}
+	return movies, nil
+}

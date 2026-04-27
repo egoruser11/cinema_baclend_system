@@ -351,3 +351,19 @@ func ValidateOrderUpdate(c echo.Context, db *gorm.DB, req requests.OrderUpdateRe
 	}
 	return errors, len(errors) == 0, newSeatsBooked
 }
+
+func ValidateOrderSummary(c echo.Context, db *gorm.DB, req requests.OrderSummaryRequest) (map[string]string, bool) {
+	errors := make(map[string]string)
+	user := c.Get("user_data").(*models.User)
+	var order models.Order
+	err := db.Model(&order).Where("id = ?", req.ID).First(&order).Error
+	if err != nil {
+		errors["order"] = "order not found"
+		return errors, false
+	}
+	if order.UserID != user.ID && user.Role != "admin" {
+		errors["order"] = "access denied: order does not belong to this user"
+		return errors, false
+	}
+	return errors, true
+}

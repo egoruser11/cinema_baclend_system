@@ -40,3 +40,7 @@ type OrderUpdateRequest struct {
 	ID    *uint           `json:"id"`
 	Seats map[uint][]uint `json:"seats"`
 }
+
+type OrderSummaryRequest struct {
+	ID uint `json:"id" query:"id"`
+}

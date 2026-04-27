@@ -188,3 +188,20 @@ func ValidateIndexPremiers(db *gorm.DB, req requests.PremiereIndexRequest) (map[
 
 	return errors, filter, len(errors) == 0
 }
+
+func ValidateSeatMap(db *gorm.DB, req requests.PremiereSeatMapRequest) (map[string]string, *models.Premiere, bool) {
+	errors := make(map[string]string)
+	if req.ID == 0 {
+		errors["id"] = "Premiere id is required"
+		return errors, nil, false
+	}
+
+	var premiere models.Premiere
+	err := db.Preload("Movie").Where("id = ?", req.ID).First(&premiere).Error
+	if err != nil {
+		errors["premiere"] = "Premiere not found"
+		return errors, nil, false
+	}
+
+	return errors, &premiere, true
+}
